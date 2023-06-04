@@ -1,13 +1,17 @@
 module.exports = (sequelize, DataTypes) => {
     const Invoice = sequelize.define(
         "invoice", {
-            /* placeCost:{},
-            hotelCost:{},
-            employeeFees:{},
-            amount:{} */
+            from:{
+                type: DataTypes.DATEONLY,
+                allowNull: true,
+            },
+            to:{
+                type: DataTypes.DATEONLY,
+                allowNull: true,
+            }
         }, {
             sequelize,
-            modelName: "mission",
+            modelName: "invoice",
 
         }
     );

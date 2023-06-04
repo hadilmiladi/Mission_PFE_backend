@@ -12,6 +12,7 @@ const mission = require("./routes/missionRoutes");
 const rankRoutes = require("./routes/rank-routes");
 const VisaRoutes = require("./routes/visa-routes");
 const PassportRoutes = require("./routes/passport-routes");
+const invoiceRoutes = require('./routes/invoiceRoutes');
 
 dotenv.config();
 // app setup
@@ -47,6 +48,7 @@ app.use("/mission", mission);
 app.use("/rank", rankRoutes);
 app.use("/passport", PassportRoutes);
 app.use("/visa", VisaRoutes);
+app.use("/invoice",invoiceRoutes)
 // connect
 port = process.env.PORT || 8088;
 app.listen(port, () => {

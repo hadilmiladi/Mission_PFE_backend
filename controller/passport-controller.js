@@ -131,6 +131,29 @@ const retriveOnePassport = async (req, res) => {
         return res.status(500).json({ error: "server error" })
     }
 }
+// ** desc   find one passport
+// ** route  GET api/passport/one/:id
+// ** access private
+// ** role   admin
+const retriveAllEmployeePassport = async (req, res) => {
+    try {
+        const items = await db.passport.findAll({
+          where: { employeeId: req.employee.id },
+          include: [
+            {
+              model: db.employee,
+              attributes: ["firstname", "lastname", "email", "currentPassport"],
+            },
+          ],
+        });
+      
+        return res.status(200).json({ items });
+      } catch (error) {
+        console.log("error: ", error);
+        return res.status(500).json({ error: "server error" });
+      }
+      
+}
 
 // ** desc   find one passport
 // ** route  GET api/passport/all
@@ -139,7 +162,12 @@ const retriveOnePassport = async (req, res) => {
 const retriveAllPassport = async (req, res) => {
     try {
         // retrive
-        const items = await db.passport.findAll();
+        const items = await db.passport.findAll({include: [
+            {
+              model: db.employee,
+              attributes: ["firstname", "lastname", "email", "currentPassport"],
+            },
+          ],});
         // ==>
         return res.status(200).json({ items })
     } catch (error) {
@@ -153,5 +181,6 @@ module.exports = {
     deleteOnePassport,
     updateOnePassport,
     retriveOnePassport,
-    retriveAllPassport
+    retriveAllPassport,
+    retriveAllEmployeePassport
 }

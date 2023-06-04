@@ -18,7 +18,10 @@ const createNewMission = async (req, res) => {
       finish,
       destination,
       planeId,
-      hotelId,
+      planeLink,
+      planePrice,
+      hotelLink,
+      hotelPrice,
       clientId,
       employeeId,
     } = req.body;
@@ -92,6 +95,7 @@ const createNewMission = async (req, res) => {
         .status(409)
         .json({ error: "mission already taken in that periode", code: "date" });
     }
+    console.log(req.body)
     // create
     const newMission = await db.mission.create({
       description,
@@ -100,7 +104,10 @@ const createNewMission = async (req, res) => {
       finish,
       destination,
       planeId,
-      hotelId,
+      planeLink,
+      planePrice,
+      hotelLink,
+      hotelPrice,
       clientId,
       employeeId,
       accepted: false,
@@ -155,7 +162,10 @@ const updateOneMission = async (req, res) => {
       finish,
       destination,
       planeId,
-      hotelId,
+      planeLink,
+      planePrice,
+      hotelLink,
+      hotelPrice
     } = req.body;
     // check if the mission exist
     const checkMission = await db.mission.findByPk(Number(id));
@@ -164,6 +174,7 @@ const updateOneMission = async (req, res) => {
         .status(404)
         .json({ error: "mission does't exist", code: "mission" });
     }
+
     //checks
     const checkAvailability = await db.mission.findOne({
       where: {
@@ -184,6 +195,22 @@ const updateOneMission = async (req, res) => {
     if (checkAvailability) {
       return res.status(409).json({ error: "date unavailable", code: "date" });
     }
+
+    if(checkAvailability.accepted===true){
+      const updateInvoice = await db.invoice.update({
+        from:checkAvailability.start,
+      to:checkAvailability.end,
+      planePrice: checkAvailability.planePrice,
+      hotelPrice:checkAvailability.hotelPrice,
+      },{
+        where:{
+          missionId:checkAvailability.id
+        }
+      })
+      if(!updateInvoice){
+        return res.status(400).json({error:"failed to update"})
+      }
+    }
     // update
     const updateMission = await db.mission.update(
       {
@@ -193,7 +220,10 @@ const updateOneMission = async (req, res) => {
         finish: new Date(finish),
         destination,
         planeId,
-        hotelId,
+      planeLink,
+      planePrice,
+      hotelLink,
+      hotelPrice
       },
       { where: { id } }
     );
@@ -224,7 +254,20 @@ const setMissionStatus = async (req, res) => {
     // check mission exist
     const checkMission = await db.mission.findByPk(Number(id));
     if (!checkMission) {
-      return res.status(404).json({ message: "mission doesn't exist" });
+      return res.status(404).json({ message: "mission doesn't exist",code:"mission" });
+    }
+    //console.log("mission: ",mission)
+    //  fget employe
+    const getEmployee = await db.employee.findByPk(Number(checkMission.employeeId),{
+      include: [
+        {
+          model: db.rank,
+          attributes: ["name", "permission", "perdiem"],
+        },
+      ],
+    },)
+    if(!getEmployee){
+      return res.status(404).json({error:"employee doesn't exist",code:"employee"})
     }
     // check its already accepted
     if (checkMission.accepted === true) {
@@ -242,6 +285,19 @@ const setMissionStatus = async (req, res) => {
     // accept it
     if (operation === "accept") {
       changes = { accepted: true, acceptedAt: Date.now(), declined: false };
+      // create invoice
+                //create
+    const newInvoice = await db.invoice.create({
+      from:checkMission.start,
+      to:checkMission.finish,
+      missionId:checkMission.id,
+      perdiem:getEmployee.rank.perdiem,
+      planePrice: checkMission.planePrice,
+      hotelPrice:checkMission.hotelPrice,
+    });
+    if (!newInvoice) {
+      return res.status(400).json({ error: "failed to create" });
+    }
     }
     // declined
     else if (operation === "cancel") {
@@ -301,6 +357,14 @@ const retriveOneMission = async (req, res) => {
             attributes: ["firstname", "lastname", "email"],
           },
         ],
+      },
+      {
+        include: [
+          {
+            model: db.invoice,
+            attributes: ["from", "to"],
+          },
+        ],
       }
     );
     if (!item) {
@@ -308,8 +372,10 @@ const retriveOneMission = async (req, res) => {
     }
 
     const passports = await db.passport.findAll({ where: { employeeId: id } });
+    const invoice = await db.invoice.findOne({ where: { missionId: id } });
+    //const empl = await db.employee.findOne({ where: { missionId: id } });
     // ==>
-    return res.status(200).json({ item, passports });
+    return res.status(200).json({ item, passports, invoice });
   } catch (error) {
     console.log("erro: ", error);
     return res.status(500).json({ error: "server error" });
@@ -357,19 +423,17 @@ const retriveAllMission = async (req, res) => {
             model: db.client,
             attributes: ["company_name", "email"],
           },
-        ],
-      },
-      {
-        include: [
           {
             model: db.employee,
             attributes: ["firstname", "lastname", "email"],
           },
         ],
       }
+      
     );
+    //const employee= await db.mission.findOne({where :{employeeId: id}})
     // ==>
-    return res.status(200).json({ items });
+    return res.status(200).json({ items});
   } catch (error) {
     console.log("erro: ", error);
     return res.status(500).json({ error: "server error" });

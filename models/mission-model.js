@@ -41,11 +41,23 @@ module.exports = (sequelize, DataTypes) => {
       },
       planeId: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
       },
-      hotelId: {
-        type: DataTypes.STRING,
-        allowNull: false,
+      planeLink: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      planePrice: {
+        type: DataTypes.FLOAT,
+        allowNull: true,
+      },
+      hotelLink: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      hotelPrice: {
+        type: DataTypes.FLOAT,
+        allowNull: true,
       },
     },
     {

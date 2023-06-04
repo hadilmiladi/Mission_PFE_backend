@@ -150,7 +150,8 @@ const updateOneEmployee = async (req, res) => {
 const retriveOneEmployee = async (req, res) => {
   try {
     // attributs
-    const { id } = req.params;
+    const id=req.params.id
+    let currentPassport=null
     // retrive
     const item = await db.employee.findByPk(
       id,
@@ -168,22 +169,104 @@ const retriveOneEmployee = async (req, res) => {
             model: db.passport,
           },
         ],
-      }
+      },
+      {
+        include: [
+          {
+            model: db.mission,
+            
+          },
+        ],
+      },
     );
     if (!item) {
       return res.status(404).json({ error: "item doesnt exist" });
     }
+    if(item?.currentPassport){
+      currentPassport=await db.passport.findOne({where:{id:item?.currentPassport}})
+    }
 
+    const mission = await db.mission.findAll({
+      where: { employeeId:id} 
+    });
+     
     const passports = await db.passport.findAll({
       where: { employeeId: id } /* , order: [['currentPassport', 'DESC']] */,
     });
+    console.log("current passport: ",currentPassport)
     // ==>
-    return res.status(200).json({ item, passports });
+    return res.status(200).json({ item, passports,currentPassport , mission  });
   } catch (error) {
     console.log("erro: ", error);
     return res.status(500).json({ error: "server error" });
   }
 };
+
+
+// ** desc   find one employee
+// ** route  GET api/employee/one/:id
+// ** access private
+// ** role   admin
+const retriveOneEmployeeProfil = async (req, res) => {
+  try {
+    // attributs
+    const id=req.employee.id
+    let currentPassport=null
+    // retrive
+    const item = await db.employee.findByPk(
+      id,
+      {
+        include: [
+          {
+            model: db.rank,
+            attributes: ["name", "permission", "perdiem"],
+          },
+        ],
+      },
+      {
+        include: [
+          {
+            model: db.passport,
+          },
+        ],
+      },
+      {
+        include: [
+          {
+            model: db.mission,
+            
+          },
+        ],
+      },
+    );
+    if (!item) {
+      return res.status(404).json({ error: "item doesnt exist" });
+    }
+    if(item?.currentPassport){
+      currentPassport=await db.passport.findOne({where:{id:item?.currentPassport}})
+    }
+
+    const mission = await db.mission.findAll({
+      where: { employeeId:id} 
+    });
+     
+    const passports = await db.passport.findAll({
+      where: { employeeId: id } /* , order: [['currentPassport', 'DESC']] */,
+    });
+    console.log("current passport: ",currentPassport)
+    // ==>
+    return res.status(200).json({ item, passports,currentPassport , mission  });
+  } catch (error) {
+    console.log("erro: ", error);
+    return res.status(500).json({ error: "server error" });
+  }
+};
+
+
+
+
+
+
 
 // ** desc   find one employee
 // ** route  GET api/employee/all
@@ -216,4 +299,6 @@ module.exports = {
   updateOneEmployee,
   retriveOneEmployee,
   retriveAllEmployee,
+  retriveOneEmployeeProfil
+ 
 };

@@ -10,13 +10,13 @@ const {
   retriveAllEmployeeMissions,
   setMissionStatus,
 } = require("../controller/mission-controller");
-
-router.get("/all", retriveAllMission);
-router.get("/employee/:id", retriveAllEmployeeMissions);
-router.get("/one/:id", retriveOneMission);
-router.post("/create", createNewMission);
-router.put("/update/:id", updateOneMission);
-router.put("/status/set/:id", setMissionStatus);
+const verifyAccess = require("../middleware/verify-access")
+router.get("/all",/* verifyAccess, */ retriveAllMission);
+router.get("/employee/:id",verifyAccess, retriveAllEmployeeMissions);
+router.get("/one/:id",verifyAccess, retriveOneMission);
+router.post("/create",verifyAccess, createNewMission);
+router.put("/update/:id",verifyAccess, updateOneMission);
+router.put("/status/set/:id",verifyAccess, setMissionStatus);
 router.delete("/delete/:id", deleteOneMission);
 
 module.exports = router;

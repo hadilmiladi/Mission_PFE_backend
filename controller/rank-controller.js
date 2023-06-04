@@ -11,8 +11,13 @@ const createNewRank = async(req, res) => {
         const { name, permission, perdiem } = req.body;
         // control on permission enum
         if (permission !== "admin" && permission !== "user" && permission !== "ceo") {
-            return res.status(406).json({ error: "invalid permission" })
+            return res.status(406).json({ code: "permission" })
         }
+         //check name already used
+         const checkName = await db.rank.findOne({ where: { name:String(name) } });
+         if (checkName) {
+             return res.status(409).json({ code: "name" })
+         }
         // create
         const newRank = await db.rank.create({
             name,

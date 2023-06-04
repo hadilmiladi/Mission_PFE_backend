@@ -1,20 +1,50 @@
 const base = require("../cnxDB");
 const jwt =require('jsonwebtoken');
 const { jwtTokens } =require("../utils/jwt-helper");
+const db= require('../models')
 
-exports.Login = async (req, res) => {
+const loginEmployee = async (req,res) =>{
     try {
-        const email = req.params.email;
-        const users= await base.query("SELECT * FROM employee WHERE email = $1", [email])
-        if(users.rows.length ===0 )return res.status(401).json({ message: "user does not exist"});
-        else {
-            let tokens=jwtTokens(users.rows[0]);
-           let coookie= res.cookie('refresh_token',tokens.refreshToken,{httpOnly:true})
-            console.log(tokens)
-            res.status(200).json(users.rows[0]);
-            
+        // attributs
+        const { email } = req.params;
+        // retrieve 
+        const item = await db.employee.findOne({
+          where: {
+            email,
+          },
+          include: [
+            {
+              model: db.rank,
+              attributes: ["name", "permission", "perdiem"],
+            },
+          ],
+        });
+        let role;
+        switch(item.rank.permission){
+          case "admin":
+            role="admin";
+            break;
+          case "user":
+            role="employee";
+            break;
+          case "ceo":
+            role="ceo";
+            break;
         }
+        if (!item) {
+            return res.status(404).json({ error: "item doesnt exist" })
+        }
+        const token =await jwt.sign({id:item.id,role},process.env.ACCESS_TOKEN_SECRET,{
+            expiresIn:"7d"
+        })
+        return res.status(200).json({ message: "loggd in successfully",role,token });
     } catch (error) {
-        return res.status(500).json({ message: error });
-    }
+        console.log("erro: ", error)
+        return res.status(500).json({ error: "server error" })
+    
 }
+    };
+
+    module.exports={
+        loginEmployee
+    };

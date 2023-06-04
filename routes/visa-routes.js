@@ -6,13 +6,15 @@ const {
     deleteOneVisa,
     updateOneVisa,
     retriveOneVisa,
-    retriveAllVisa
+    retriveAllVisa,
+    retriveAllPassportVisa
 } = require("../controller/visa-controller")
-
-router.get("/all", retriveAllVisa);
-router.get("/one/:id", retriveOneVisa)
-router.post("/create", createNewVisa)
-router.put("/update/:id", updateOneVisa)
+const verifyAccess = require("../middleware/verify-access")
+router.get("/all",verifyAccess, retriveAllVisa);
+router.get("/one/:id",verifyAccess, retriveOneVisa)
+router.get("/passport/:passportId",verifyAccess, retriveAllPassportVisa);
+router.post("/create/:employeeId", createNewVisa)
+router.put("/update/:id", verifyAccess,updateOneVisa)
 router.delete("/delete/:id", deleteOneVisa)
 
 module.exports = router
