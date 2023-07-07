@@ -2,6 +2,10 @@ module.exports = (sequelize, DataTypes) => {
   const Mission = sequelize.define(
     "mission",
     {
+      missionId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
       description: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -18,11 +22,19 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
+      validated: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
       declinedAt: {
         type: DataTypes.DATEONLY,
         allowNull: true,
       },
       acceptedAt: {
+        type: DataTypes.DATEONLY,
+        allowNull: true,
+      },
+      validatedAt: {
         type: DataTypes.DATEONLY,
         allowNull: true,
       },
@@ -48,17 +60,27 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
       },
       planePrice: {
-        type: DataTypes.FLOAT,
+        type: DataTypes.DOUBLE,
         allowNull: true,
+        defaultValue:0.0
       },
       hotelLink: {
         type: DataTypes.TEXT,
         allowNull: true,
       },
       hotelPrice: {
-        type: DataTypes.FLOAT,
+        type: DataTypes.DOUBLE,
         allowNull: true,
+        defaultValue:0.0
       },
+      clientId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+      },
+      employeeId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+      }
     },
     {
       sequelize,

@@ -17,7 +17,11 @@ module.exports = (sequelize, DataTypes) => {
             expiresAt: {
                 type: DataTypes.DATEONLY,
                 allowNull: false
-            }
+            },
+            employeeId: {
+                type: DataTypes.INTEGER,
+                allowNull: true
+              }
         }, {
             sequelize,
             modelName: "passport",

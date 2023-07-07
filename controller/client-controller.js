@@ -130,9 +130,13 @@ const retriveAllClient = async(req, res) => {
         const items = await db.client.findAll();
         // count all cliebts
         const size = await db.client.count()
+        /* if(size===0){
+            return res.status(404).json({ error: "there is no client found"})
+        } */
         // ==>
         return res.status(200).json({ items,size })
     } catch (error) {
+        
         console.log("erro: ", error)
         return res.status(500).json({ error: "server error" })
     }

@@ -10,7 +10,7 @@ const createNewRank = async(req, res) => {
         // attributs
         const { name, permission, perdiem } = req.body;
         // control on permission enum
-        if (permission !== "admin" && permission !== "user" && permission !== "ceo") {
+        if (permission !== "admin" && permission !== "user" && permission !== "ceo" && permission !== "chef du projet") {
             return res.status(406).json({ code: "permission" })
         }
          //check name already used

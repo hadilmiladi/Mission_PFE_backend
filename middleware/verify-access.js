@@ -12,24 +12,13 @@ const verifyAccess=async(req,res,next)=>{
    try {
      // ** decode token
      const decodedToken = await jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-     if(decodedToken.role==="admin"){
-      console.log("admin")
-     }
-     else if(decodedToken.role==="employee"){
-      const item = await db.employee.findOne(
-        {where:{id:decodedToken.id}}
-       )
-       req.employee = item;
-     }
-     else if(decodedToken.role==="ceo"){
-      const item = await db.employee.findOne(
-        {where:{id:decodedToken.id}}
-       )
-       req.employee = item;
-     }
-     else{
+     const item = await db.employee.findOne(
+      {where:{id:decodedToken.id}}
+     )
+     if(!item){
       return res.status(403).json({ message: "unknown role" });
      }
+     req.employee = item;
      next();
    } catch (error) {
      // ** Expected error is token not valid

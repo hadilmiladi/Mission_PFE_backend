@@ -12,7 +12,11 @@ module.exports = (sequelize, DataTypes) => {
             expiresAt: {
                 type: DataTypes.DATEONLY,
                 allowNull: true
-            }
+            },
+            passportId: {
+                type: DataTypes.INTEGER,
+                allowNull: true
+              }
         }, {
             sequelize,
             modelName: "visa",

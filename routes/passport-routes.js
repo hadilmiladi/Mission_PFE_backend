@@ -7,15 +7,17 @@ const {
     updateOnePassport,
     retriveOnePassport,
     retriveAllPassport,
-    retriveAllEmployeePassport
+    retriveAllEmployeePassport,
+    createPassportByAdmin
 } = require("../controller/passport-controller")
 
 const verifyAccess = require("../middleware/verify-access")
-router.get("/all", retriveAllPassport);
-router.get("/one/:id", retriveOnePassport)
+router.get("/all",/* verifyAccess, */ retriveAllPassport);
+router.get("/one/:id",/* verifyAccess, */ retriveOnePassport)
 router.get("/employee",verifyAccess, retriveAllEmployeePassport)
-router.post("/create/:employeeId", createNewPassport)
-router.put("/update/:id", updateOnePassport)
-router.delete("/delete/:id", deleteOnePassport)
+router.post("/create",verifyAccess, createNewPassport)
+router.post("/create/:id",verifyAccess, createPassportByAdmin)
+router.put("/update/:id",verifyAccess, updateOnePassport)
+router.delete("/delete/:id",verifyAccess, deleteOnePassport)
 
 module.exports = router

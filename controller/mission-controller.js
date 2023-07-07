@@ -3,6 +3,7 @@ const { Op } = require("sequelize");
 const Sequelize = require("sequelize");
 // db
 const db = require("../models");
+const { Console } = require("console");
 
 // ** desc   create mission
 // ** route  POST api/mission/create
@@ -10,6 +11,7 @@ const db = require("../models");
 // ** role   admin
 const createNewMission = async (req, res) => {
   try {
+
     // attributs
     const {
       description,
@@ -25,9 +27,134 @@ const createNewMission = async (req, res) => {
       clientId,
       employeeId,
     } = req.body;
+    console.log(req.body)
     // check client exist
     const checkClient = await db.client.findOne({
-      where: { id: clientId, activated: true },
+      where: { id:clientId, activated: true },
+    });
+    if (!checkClient) {
+      return res
+        .status(404)
+        .json({ error: "client doesn't exist", code: "client" });
+    }
+    
+    const checkEmployee = await db.employee.findOne({
+      where: {
+       id: employeeId,
+      },
+    });
+    if (!checkEmployee) {
+      return res
+        .status(404)
+        .json({ error: "employee doesn't exist", code: "employee" });
+    }
+    if (checkEmployee && checkEmployee.activated === false) {
+      return res
+        .status(409)
+        .json({ error: "employee is not activated", code: "activated" });
+    }
+    // check passport
+    if (checkEmployee.currentPassport === null) {
+      return res
+        .status(409)
+        .json({ error: "invalid passport", code: "passport" });
+    }
+    // get employee current passport
+    const currentPassport = await db.passport.findOne({
+      where: { id: checkEmployee.currentPassport },
+    });
+    // check nationalite
+    if (currentPassport.nationality !== destination) {
+      // check visa
+      const checkVisa = await db.visa.findOne({
+        where: {
+          passportId: currentPassport.id,
+          valable_for: destination,
+          expiresAt: {
+            [Op.gte]: new Date(finish),
+          },
+        },
+      });
+      if (checkVisa) {
+        return res.status(409).json({ error: "invalid visa", code: "visa" });
+      }
+    }
+    // check mission date
+    const checkMission = await db.mission.findAll({
+      where: {
+        employeeId,
+        start: {
+          [Op.lte]: start, // date is the date you are interested in
+        },
+        finish: {
+          [Op.gte]: finish, // date is the date you are interested in
+        },
+        accepted: true,
+        declined: false,
+      }, //didn't understand
+    });
+    //
+    console.log('checkMission: ***********************************************************************************************************************************************', checkMission);
+
+    if (checkMission.length > 0) {
+      return res
+        .status(409)
+        .json({ error: "mission already taken in that periode", code: "date" });
+    }
+    console.log(req.body)
+    // create
+    const newMission = await db.mission.create({
+      description,
+      comment,
+      start,
+      finish,
+      destination,
+      planeId,
+      planeLink,
+      planePrice,
+      hotelLink,
+      hotelPrice,
+      clientId,
+      employeeId,
+      accepted: false,
+    });
+    if (!newMission) {
+      return res.status(400).json({ error: "failed to create" });
+    }
+    // ==>
+    return res.status(201).json({ message: "created successfully" });
+  } catch (error) {
+    console.log("erro: ", error);
+    return res.status(500).json({ error: "server error" });
+  }
+};
+
+// ** desc   create mission
+// ** route  POST api/mission/create
+// ** access private
+// ** role   admin
+const createMissionByEmployee = async (req, res) => {
+  try {
+const employeeId=req.employee.id
+    // attributs
+    const {
+      description,
+      comment,
+      start,
+      finish,
+      destination,
+      planeId,
+      planeLink,
+      /* planePrice, */
+      hotelLink,
+      /* hotelPrice, */
+      clientId,
+      
+    } = req.body;
+    console.log(req.body)
+    // check client exist
+    const checkClient = await db.client.findOne({
+      where: { id:clientId, activated: true },
     });
     if (!checkClient) {
       return res
@@ -36,7 +163,7 @@ const createNewMission = async (req, res) => {
     }
     const checkEmployee = await db.employee.findOne({
       where: {
-        id: employeeId,
+       id: employeeId,
       },
     });
     if (!checkEmployee) {
@@ -105,9 +232,9 @@ const createNewMission = async (req, res) => {
       destination,
       planeId,
       planeLink,
-      planePrice,
+     /*  planePrice, */
       hotelLink,
-      hotelPrice,
+      /* hotelPrice, */
       clientId,
       employeeId,
       accepted: false,
@@ -143,6 +270,26 @@ const deleteOneMission = async (req, res) => {
   } catch (error) {
     console.log("erro: ", error);
     return res.status(500).json({ error: "server error" });
+  }
+};
+
+// ** desc   delete mission
+// ** route  DELETE api/mission/delete/:id
+// ** access private
+// ** role   admin
+const deleteallMission = async (req, res) => {
+  try {
+    // Delete all missions
+    const deleteMission = await db.mission.destroy({ where: {} });
+    
+    if (!deleteMission) {
+      return res.status(400).json({ error: "Failed to delete missions" });
+    }
+    
+    return res.status(202).json({ message: "Missions deleted successfully" });
+  } catch (error) {
+    console.log("Error: ", error);
+    return res.status(500).json({ error: "Server error" });
   }
 };
 
@@ -196,15 +343,15 @@ const updateOneMission = async (req, res) => {
       return res.status(409).json({ error: "date unavailable", code: "date" });
     }
 
-    if(checkAvailability.accepted===true){
+    if(checkMission.accepted===true){
       const updateInvoice = await db.invoice.update({
-        from:checkAvailability.start,
-      to:checkAvailability.end,
-      planePrice: checkAvailability.planePrice,
-      hotelPrice:checkAvailability.hotelPrice,
+        from:checkMission.start,
+      to:checkMission.end,
+      planePrice: checkMission.planePrice,
+      hotelPrice:checkMission.hotelPrice,
       },{
         where:{
-          missionId:checkAvailability.id
+          missionId:checkMission.id
         }
       })
       if(!updateInvoice){
@@ -247,17 +394,20 @@ const setMissionStatus = async (req, res) => {
     // params
     const { id } = req.params;
     // attributs
-    const { operation } = req.body;
-    if (operation !== "accept" && operation !== "cancel") {
+    const { accepted, declined, validated } = req.body;
+    console.log("########################################################################################################################################################################"/* ,req.body */)
+    /* if (accepted !== "true" && declined !== "true" && validated !=="true") {
       return res.status(406).json({ message: "operation invalid" });
-    }
+    } */
+    
     // check mission exist
     const checkMission = await db.mission.findByPk(Number(id));
+    //console.log("this is check mission",checkMission)
     if (!checkMission) {
       return res.status(404).json({ message: "mission doesn't exist",code:"mission" });
     }
-    //console.log("mission: ",mission)
-    //  fget employe
+   
+    //get employe
     const getEmployee = await db.employee.findByPk(Number(checkMission.employeeId),{
       include: [
         {
@@ -266,25 +416,117 @@ const setMissionStatus = async (req, res) => {
         },
       ],
     },)
+    //console.log("this is the employee",getEmployee)
     if(!getEmployee){
       return res.status(404).json({error:"employee doesn't exist",code:"employee"})
     }
     // check its already accepted
-    if (checkMission.accepted === true) {
+   /*  if (checkMission.accepted === true) {
       return res
         .status(409)
         .json({ message: "mission already accepted", code: "accepted" });
-    }
+    } */
+   /*  // check its already validated
+    if (checkMission.validated === true) {
+      return res
+        .status(409)
+        .json({ message: "mission already validated", code: "validated" });
+    } */
     // check if its already declined
-    else if (checkMission.accepted === true) {
+/*     else if (checkMission.declined === true) {
       return res
         .status(409)
         .json({ message: "mission already declined", code: "declined" });
+    } */
+ 
+    // update
+    const setMission = await db.mission.update(
+      {
+        
+          accepted,
+          declined,
+          validated,
+        
+    },
+      { where: { id } }
+    );
+    console.log("Set Mission:", accepted,declined,validated);
+    if (!setMission) {
+      return res.status(400).json({ message: "mission doesn't exist" });
     }
-    let changes = {};
-    // accept it
-    if (operation === "accept") {
-      changes = { accepted: true, acceptedAt: Date.now(), declined: false };
+    
+    if (accepted === true && declined === true && validated === true) {
+      return res.status(406).json({ message: "operation invalid" });
+    }
+
+    if (accepted !== true && declined !== true && validated !== true) {
+      return res.status(406).json({ message: "operation invalid" });
+    }
+     // Construct the appropriate message
+  let message = "";
+  if (accepted === true) {
+    message = "Mission accepted successfully";
+   
+    // create invoice
+                //create
+                const newInvoice = await db.invoice.create({
+                  start:checkMission.start,
+                  end:checkMission.finish,
+                  missionId:checkMission.id,
+                  perdiem:getEmployee.rank.perdiem,
+                  planePrice: checkMission.planePrice,
+                  hotelPrice:checkMission.hotelPrice,
+                  amount: checkMission.hotelPrice + checkMission.planePrice + getEmployee.rank?.perdiem || 0,
+                  employeeId:checkMission.employeeId,
+                  clientId:checkMission.clientId
+                });
+                if (!newInvoice) {
+                  return res.status(400).json({ error: "failed to create" });
+                } 
+  } else if (declined === true) {
+    message = "Mission declined successfully";
+  } else if (validated === true) {
+    message = "Mission validated successfully";
+  } else {
+    message = "NO";
+  }
+  
+  return res.status(202).json({ message });
+  
+} catch (error) {
+  console.log("error: ", error);
+  return res.status(500).json({ error: "server error" });
+}
+
+}
+
+
+
+/* const setConfirmMission  = async (req, res) => {
+  try {
+    // params
+    const { id } = req.params;
+     // check mission exist
+     const checkMission = await db.mission.findByPk(Number(id));
+     if (!checkMission) {
+       return res.status(404).json({ message: "mission doesn't exist",code:"mission" });
+     }
+    
+     if(checkMission.validated===false){
+      return res.status(409).json({ message: "mission doesn't exist",code:"mission" })
+     }
+
+     const getEmployee=await db.employee.findOne({
+      where: {
+        id: checkMission.employeeId
+      }
+     })
+      // update
+    const setMission = await db.mission.update(
+      {
+        accepted: true , acceptedAt: Date.now()
+      },
+      { where: { id } })
       // create invoice
                 //create
     const newInvoice = await db.invoice.create({
@@ -294,43 +536,24 @@ const setMissionStatus = async (req, res) => {
       perdiem:getEmployee.rank.perdiem,
       planePrice: checkMission.planePrice,
       hotelPrice:checkMission.hotelPrice,
+      employeeId:checkMission.employeeId,
+      clientId:checkMission.clientId
     });
     if (!newInvoice) {
       return res.status(400).json({ error: "failed to create" });
-    }
-    }
-    // declined
-    else if (operation === "cancel") {
-      changes = {
-        accepted: false,
-        declinedAt: Date.now(),
-        declined: true,
-        comment: req.body.comment,
-      };
-    }
-    // update
-    const setMission = await db.mission.update(
-      {
-        ...changes,
-      },
-      { where: { id } }
-    );
+    } 
+    
     if (!setMission) {
       return res.status(400).json({ message: "mission doesn't exist" });
     }
     //
-    return res.status(202).json({
-      message:
-        operation === "accept"
-          ? "mission accepted successfully"
-          : "mission declined successfully",
-    });
-  } catch (error) {
+    return res.status(202).json()}
+   catch (error) {
     console.log("erro: ", error);
     return res.status(500).json({ error: "server error" });
-  }
-};
 
+  }}
+ */
 // ** desc   find one mission
 // ** route  GET api/mission/one/:id
 // ** access private
@@ -408,7 +631,32 @@ const retriveAllEmployeeMissions = async (req, res) => {
     return res.status(500).json({ error: "server error" });
   }
 };
-
+// ** desc   find one mission
+// ** route  GET api/mission/all
+// ** access private
+// ** role   admin
+const retriveEmployeeMissions = async (req, res) => {
+  try {
+    // ** params
+    const  id  = req.employee.id;
+    // ** find missions
+    const items = await db.mission.findAll({
+      where: { employeeId: id },
+      include: [
+        {
+          model: db.client,
+          as: "client",
+        },
+      ],
+    });
+    console.log("items: ", items);
+    // ** ==>
+    return res.status(200).json({ items });
+  } catch (error) {
+    console.log("erro: ", error);
+    return res.status(500).json({ error: "server error" });
+  }
+};
 // ** desc   find one mission
 // ** route  GET api/mission/all
 // ** access private
@@ -448,4 +696,8 @@ module.exports = {
   retriveAllMission,
   retriveAllEmployeeMissions,
   setMissionStatus,
+  retriveEmployeeMissions,
+  createMissionByEmployee,
+  deleteallMission
 };
+

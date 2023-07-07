@@ -7,7 +7,49 @@ const { Op, DATEONLY, DataTypes } = require('sequelize');
 // ** role   admin
 const createNewPassport = async (req, res) => {
     try {
-        const {employeeId}=req.params;
+       const employeeId=req.employee.id
+        // attributs
+        const { registration, nationality, createdAt, expiresAt } = req.body;
+        //check registration already used
+        const checkRegistration = await db.passport.findOne({ where: { registration:String(registration) } });
+        if (checkRegistration) {
+            return res.status(409).json({ code: "registration" })
+        }
+        // check seconde date is after first
+        if (createdAt >= expiresAt) {
+            return res.status(409).json({ code: "date" })
+        }
+        // create
+        const newPassport = await db.passport.create({
+            registration,
+            nationality,
+            createdAt,
+            expiresAt,
+            employeeId,
+
+        });
+        if (!newPassport) {
+            return res.status(400).json({ error: "failed to create" })
+        }
+        // set this passport to be valid
+        const setValidpassport = await db.employee.update({ currentPassport: newPassport.id }, { where: { id: employeeId } })
+        if (!setValidpassport) {
+            return res.status(400).json({ error: "item doesn't exist" })
+        }
+        // ==>
+        return res.status(201).json({ message: "created successfully" })
+    } catch (error) {
+        console.log("erro: ", error)
+        return res.status(500).json({ error: "server error" })
+    }
+}
+// ** desc   create passport
+// ** route  POST api/passport/create
+// ** access private
+// ** role   admin
+const createPassportByAdmin = async (req, res) => {
+    try {
+       const employeeId=req.params.id
         // attributs
         const { registration, nationality, createdAt, expiresAt } = req.body;
         //check registration already used
@@ -137,6 +179,7 @@ const retriveOnePassport = async (req, res) => {
 // ** role   admin
 const retriveAllEmployeePassport = async (req, res) => {
     try {
+        console.log("#########################################################################################################",req.employee)
         const items = await db.passport.findAll({
           where: { employeeId: req.employee.id },
           include: [
@@ -182,5 +225,6 @@ module.exports = {
     updateOnePassport,
     retriveOnePassport,
     retriveAllPassport,
-    retriveAllEmployeePassport
+    retriveAllEmployeePassport,
+    createPassportByAdmin
 }

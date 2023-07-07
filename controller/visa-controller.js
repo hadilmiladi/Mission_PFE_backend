@@ -8,7 +8,59 @@ const db = require('../models');
 const createNewVisa = async(req, res) => {
     try {
         // params
-        const {employeeId}=req.params;
+        const employeeId=req.passport.id
+        /* const employeeId=req.params.id */
+        // attributs
+        const { valable_for, startAt, expiresAt } = req.body;
+        // check employee existing
+        const checkEmployee = await db.employee.findOne({ where: { id: employeeId } });
+        if (!checkEmployee) {
+            return res.status(404).json({ error: "passport doesn't exist",code:"employee" })
+        }
+        // check employee has a passport
+        if(!checkEmployee.currentPassport){
+            console.log("her ?")
+            return res.status(409).json({ error: "passport doesn't exist",code:"passport" })
+        }
+        // retrive passport
+        const getPassport = await db.passport.findOne({where:{id:checkEmployee.currentPassport}})
+        if(!getPassport){
+            return res.status(404).json({code:"passport"})
+        }
+        const createdAtPassportDate=new Date(getPassport.createdAt)
+        const startedAtDate=new Date(startAt)
+        const expireAtPassportDate=new Date(getPassport.expiresAt)
+        const expiresAtDate=new Date(expiresAt)
+        if(startedAtDate<createdAtPassportDate||expiresAtDate>expireAtPassportDate){
+            console.log("no here")
+            return res.status(409).json({code:"range",error:"visa range outside the passport range"})
+        }
+        // create
+        const newVisa = await db.visa.create({
+            valable_for,
+            startAt,
+            expiresAt,
+            passportId:checkEmployee.currentPassport
+        });
+
+        if (!newVisa) {
+            return res.status(400).json({ error: "failed to create" })
+        }
+
+        return res.status(201).json({ message: "created successfully" })
+    } catch (error) {
+        console.log("erro: ", error)
+        return res.status(500).json({ error: "server error" })
+    }
+}
+// ** desc   create visa
+// ** route  POST api/visa/create
+// ** access private
+// ** role   admin
+const createVisaByAdmin = async(req, res) => {
+    try {
+        // params
+        const employeeId=req.params.id
         // attributs
         const { valable_for, startAt, expiresAt } = req.body;
         // check employee existing
@@ -143,26 +195,31 @@ const retriveAllVisa = async(req, res) => {
         return res.status(500).json({ error: "server error" })
     }
 }
-// ** desc   find one visa
-// ** route  GET api/visa/all
+// ** desc   find all visas for a passport
+// ** route  GET api/visa/all/:passportId
 // ** access private
 // ** role   admin
 const retriveAllPassportVisa = async (req, res) => {
     try {
       // ** params
       const { passportId } = req.params;
-      // ** find passport
-      const items = await db.visa.findAll({
-        where: {passportId },
+      
+      // ** find visas
+      const visas = await db.visa.findAll({
+        where: { passportId },
       });
-      console.log("items: ", items);
+  
+      console.log("visas: ", visas);
+  
       // ** ==>
-      return res.status(200).json({ items });
+      return res.status(200).json({ visas });
     } catch (error) {
-      console.log("erro: ", error);
+      console.log("error: ", error);
       return res.status(500).json({ error: "server error" });
     }
   };
+  
+  
   
 module.exports = {
     createNewVisa,
@@ -170,5 +227,6 @@ module.exports = {
     updateOneVisa,
     retriveOneVisa,
     retriveAllVisa,
-    retriveAllPassportVisa
+    retriveAllPassportVisa,
+    createVisaByAdmin
 }

@@ -39,7 +39,8 @@ module.exports = (sequelize, Sequelize) => {
     }
   );
   Client.associate = function (models) {
-    Client.hasMany(models.mission, { foreignKey: "clientId" });
+    Client.hasMany(models.mission, { foreignKey: "missionId" });
+    //Client.hasMany(models.client, { foreignKey: "clientId" });
   };
   Client.sync()
     .then(() => console.log("Client table created"))

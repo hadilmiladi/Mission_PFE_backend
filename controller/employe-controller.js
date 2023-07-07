@@ -1,5 +1,4 @@
 // modules
-const Sequelize = require("sequelize");
 const { Op } = require("sequelize");
 // db
 const db = require("../models");
@@ -210,11 +209,11 @@ const retriveOneEmployee = async (req, res) => {
 const retriveOneEmployeeProfil = async (req, res) => {
   try {
     // attributs
-    const id=req.employee.id
+    //const id=req.employee.id
     let currentPassport=null
     // retrive
-    const item = await db.employee.findByPk(
-      id,
+    const item = await db.employee.findOne(
+      
       {
         include: [
           {
@@ -245,15 +244,14 @@ const retriveOneEmployeeProfil = async (req, res) => {
     if(item?.currentPassport){
       currentPassport=await db.passport.findOne({where:{id:item?.currentPassport}})
     }
-
+    console.log("employee: ",req.employee)
     const mission = await db.mission.findAll({
-      where: { employeeId:id} 
+      where: { employeeId:req.employee.id } 
     });
      
     const passports = await db.passport.findAll({
-      where: { employeeId: id } /* , order: [['currentPassport', 'DESC']] */,
+      where: { employeeId: req.employee.id  } /* , order: [['currentPassport', 'DESC']] */,
     });
-    console.log("current passport: ",currentPassport)
     // ==>
     return res.status(200).json({ item, passports,currentPassport , mission  });
   } catch (error) {
@@ -285,7 +283,6 @@ const retriveAllEmployee = async (req, res) => {
               } */,
       ],
     });
-    console.log("items: ", items);
     return res.status(200).json({ items });
   } catch (error) {
     console.log("erro: ", error);
