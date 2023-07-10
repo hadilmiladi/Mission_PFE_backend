@@ -128,7 +128,128 @@ const createNewMission = async (req, res) => {
     return res.status(500).json({ error: "server error" });
   }
 };
+//create a validated mission 
+const createChefMission = async (req, res) => {
+  try {
 
+    // attributs
+    const {
+      description,
+      comment,
+      start,
+      finish,
+      destination,
+      planeId,
+      planeLink,
+      planePrice,
+      hotelLink,
+      hotelPrice,
+      clientId,
+      employeeId,
+    } = req.body;
+    console.log(req.body)
+    // check client exist
+    const checkClient = await db.client.findOne({
+      where: { id:clientId, activated: true },
+    });
+    if (!checkClient) {
+      return res
+        .status(404)
+        .json({ error: "client doesn't exist", code: "client" });
+    }
+    
+    const checkEmployee = await db.employee.findOne({
+      where: {
+       id: employeeId,
+      },
+    });
+    if (!checkEmployee) {
+      return res
+        .status(404)
+        .json({ error: "employee doesn't exist", code: "employee" });
+    }
+    if (checkEmployee && checkEmployee.activated === false) {
+      return res
+        .status(409)
+        .json({ error: "employee is not activated", code: "activated" });
+    }
+    // check passport
+    if (checkEmployee.currentPassport === null) {
+      return res
+        .status(409)
+        .json({ error: "invalid passport", code: "passport" });
+    }
+    // get employee current passport
+    const currentPassport = await db.passport.findOne({
+      where: { id: checkEmployee.currentPassport },
+    });
+    // check nationalite
+    if (currentPassport.nationality !== destination) {
+      // check visa
+      const checkVisa = await db.visa.findOne({
+        where: {
+          passportId: currentPassport.id,
+          valable_for: destination,
+          expiresAt: {
+            [Op.gte]: new Date(finish),
+          },
+        },
+      });
+      if (checkVisa) {
+        return res.status(409).json({ error: "invalid visa", code: "visa" });
+      }
+    }
+    // check mission date
+    const checkMission = await db.mission.findAll({
+      where: {
+        employeeId,
+        start: {
+          [Op.lte]: start, // date is the date you are interested in
+        },
+        finish: {
+          [Op.gte]: finish, // date is the date you are interested in
+        },
+        accepted: true,
+        declined: false,
+      }, //didn't understand
+    });
+    //
+    console.log('checkMission: ***********************************************************************************************************************************************', checkMission);
+
+    if (checkMission.length > 0) {
+      return res
+        .status(409)
+        .json({ error: "mission already taken in that periode", code: "date" });
+    }
+    console.log(req.body)
+    // create
+    const newMission = await db.mission.create({
+      description,
+      comment,
+      start,
+      finish,
+      destination,
+      planeId,
+      planeLink,
+      planePrice,
+      hotelLink,
+      hotelPrice,
+      clientId,
+      employeeId,
+      accepted: false,
+      declined:false,
+      validated: true
+    });
+    if (!newMission) {
+      return res.status(400).json({ error: "failed to create" });
+    }
+    // ==>
+    return res.status(201).json({ message: "created successfully" });
+  } catch (error) {
+    console.log("erro: ", error);
+    return res.status(500).json({ error: "server error" });
+  }
+};
 // ** desc   create mission
 // ** route  POST api/mission/create
 // ** access private
@@ -256,22 +377,52 @@ const employeeId=req.employee.id
 // ** role   admin
 const deleteOneMission = async (req, res) => {
   try {
-    // attributs
+    // Attributes
     const { id } = req.params;
-    // create
-    const deleteMission = await db.mission.destroy({
-      where: { id },
-    });
-    if (!deleteMission) {
-      return res.status(400).json({ error: "failed to delete" });
+
+    // Find the mission by ID
+    const mission = await db.mission.findByPk(id);
+    if (!mission) {
+      return res.status(404).json({ error: "Mission not found" });
     }
-    // ==>
-    return res.status(202).json({ message: "deleted successfully" });
+
+    // Find invoices with the ID of the mission
+    const invoices = await db.invoice.findAll({
+      where: {
+        missionId: id,
+      },
+    });
+
+    // Delete the invoices if they exist
+    for (const invoice of invoices) {
+        // Retrieve all globalinvoices associated with the invoiceID
+        const globalinvoices = await db.globalInvoice.findAll({
+          where: {
+            invoiceIds: {
+              [Op.contains]: [invoice.id],
+            }
+          },
+        });
+
+        // Delete each globalinvoice
+        for (const globalinvoice of globalinvoices) {
+          await globalinvoice.destroy();
+        }
+
+        await invoice.destroy();
+    }
+
+    // Delete the mission
+    await mission.destroy();
+
+    // Return success response
+    return res.status(202).json({ message: "Mission and associated invoices deleted successfully" });
   } catch (error) {
-    console.log("erro: ", error);
-    return res.status(500).json({ error: "server error" });
+    console.log("Error: ", error);
+    return res.status(500).json({ error: "Server error" });
   }
 };
+
 
 // ** desc   delete mission
 // ** route  DELETE api/mission/delete/:id
@@ -420,24 +571,7 @@ const setMissionStatus = async (req, res) => {
     if(!getEmployee){
       return res.status(404).json({error:"employee doesn't exist",code:"employee"})
     }
-    // check its already accepted
-   /*  if (checkMission.accepted === true) {
-      return res
-        .status(409)
-        .json({ message: "mission already accepted", code: "accepted" });
-    } */
-   /*  // check its already validated
-    if (checkMission.validated === true) {
-      return res
-        .status(409)
-        .json({ message: "mission already validated", code: "validated" });
-    } */
-    // check if its already declined
-/*     else if (checkMission.declined === true) {
-      return res
-        .status(409)
-        .json({ message: "mission already declined", code: "declined" });
-    } */
+  
  
     // update
     const setMission = await db.mission.update(
@@ -450,6 +584,7 @@ const setMissionStatus = async (req, res) => {
     },
       { where: { id } }
     );
+    console.log("id",id)
     console.log("Set Mission:", accepted,declined,validated);
     if (!setMission) {
       return res.status(400).json({ message: "mission doesn't exist" });
@@ -485,6 +620,35 @@ const setMissionStatus = async (req, res) => {
                 } 
   } else if (declined === true) {
     message = "Mission declined successfully";
+    //destroy invoice and globalinvoices
+     // Find the invoice by ID
+     const invoice = await db.invoice.findOne({
+     where:{
+      missionId:id
+     } });
+     if (!invoice) {
+       return res.status(404).json({ error: "Invoice not found" });
+     }
+ 
+     // Find the global invoices with invoiceIds containing the invoice ID
+     const globalInvoices = await db.globalInvoice.findAll({
+       where: {
+         invoiceIds: {
+          [Op.contains]: [invoice.id],
+         },
+       },
+     });
+ 
+     // Delete the global invoices
+     for (const globalInvoice of globalInvoices) {
+       await globalInvoice.destroy();
+     }
+ 
+     // Delete the invoice
+     await invoice.destroy();
+ 
+     // Return success response
+     return res.status(202).json({ message: "Invoice and associated global invoices deleted successfully" });
   } else if (validated === true) {
     message = "Mission validated successfully";
   } else {
@@ -635,17 +799,20 @@ const retriveAllEmployeeMissions = async (req, res) => {
 // ** route  GET api/mission/all
 // ** access private
 // ** role   admin
-const retriveEmployeeMissions = async (req, res) => {
+const retriveAll = async (req, res) => {
   try {
-    // ** params
-    const  id  = req.employee.id;
+   
     // ** find missions
     const items = await db.mission.findAll({
-      where: { employeeId: id },
       include: [
         {
           model: db.client,
-          as: "client",
+          attributes: ['company_name', 'email'],
+        },
+        {
+          model: db.employee,
+          attributes: ['firstname', 'lastname', 'email'],
+          
         },
       ],
     });
@@ -663,31 +830,36 @@ const retriveEmployeeMissions = async (req, res) => {
 // ** role   admin
 const retriveAllMission = async (req, res) => {
   try {
-    // retrive
-    const items = await db.mission.findAll(
-      {
-        include: [
-          {
-            model: db.client,
-            attributes: ["company_name", "email"],
-          },
-          {
-            model: db.employee,
-            attributes: ["firstname", "lastname", "email"],
-          },
-        ],
-      }
-      
-    );
-    //const employee= await db.mission.findOne({where :{employeeId: id}})
-    // ==>
-    return res.status(200).json({ items});
+    const { id } = req.params;
+    // Retrieve all missions except the one associated with the specified employee ID
+    const items = await db.mission.findAll({
+      where: {
+        employeeId: {
+          [Op.ne]: id, // Exclude the specified employee ID
+        },
+      },
+      include: [
+        {
+          model: db.client,
+          attributes: ['company_name', 'email'],
+        },
+        {
+          model: db.employee,
+          attributes: ['firstname', 'lastname', 'email'],
+          
+        },
+      ],
+    });
+
+    return res.status(200).json({ items });
   } catch (error) {
-    console.log("erro: ", error);
-    return res.status(500).json({ error: "server error" });
+    console.log('error: ', error);
+    return res.status(500).json({ error: 'Server error' });
   }
 };
 
+        
+   
 module.exports = {
   createNewMission,
   deleteOneMission,
@@ -696,8 +868,10 @@ module.exports = {
   retriveAllMission,
   retriveAllEmployeeMissions,
   setMissionStatus,
-  retriveEmployeeMissions,
+ // retriveEmployeeMissions,
   createMissionByEmployee,
-  deleteallMission
+  deleteallMission,
+  retriveAll,
+  createChefMission
 };
 

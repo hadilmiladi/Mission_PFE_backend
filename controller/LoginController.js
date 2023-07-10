@@ -154,6 +154,8 @@ const loginEmployee = async (req,res) =>{
             break;
           case "ceo":
             role="ceo";
+            case "chef du projet":
+            role="chef du projet";
             break;
         }
         if (!item) {

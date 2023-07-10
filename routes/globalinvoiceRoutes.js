@@ -7,7 +7,9 @@ const {
     retrieveAllGlobalInvoices,
     deleteOneglobalInvoice,
     retrieveInvoicesByGlobalInvoice,
-    retrieveGlobalInvoiceById
+    retrieveGlobalInvoiceById,
+    retrieveGlobalInvoiceDetails,
+    setPaid
   
   } = require("../controller/globalinvoice-controller");
   const verifyAccess = require("../middleware/verify-access")
@@ -16,5 +18,7 @@ const {
   router.delete("/:id",/* verifyAccess, */deleteOneglobalInvoice)
   router.get('/invoices/:id',retrieveInvoicesByGlobalInvoice)
   router.post('/global/:id',retrieveGlobalInvoiceById)
+  router.get('/global/:id',retrieveGlobalInvoiceDetails)
+  router.put('/set/:id',setPaid)
   router.post("/sendmail", sendMail)
   module.exports = router

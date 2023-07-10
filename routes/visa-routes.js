@@ -11,10 +11,10 @@ const {
     createVisaByAdmin
 } = require("../controller/visa-controller")
 const verifyAccess = require("../middleware/verify-access")
-router.get("/all",verifyAccess, retriveAllVisa);
+router.get("/all",/* verifyAccess, */ retriveAllVisa);
 router.get("/one/:id",verifyAccess, retriveOneVisa)
-router.get("/passport/:passportId",verifyAccess, retriveAllPassportVisa);
-router.post("/create",/* verifyAccess, */ createNewVisa)
+router.get("/passport/:passportId",/* verifyAccess, */ retriveAllPassportVisa);
+router.post("/createwithcurrent/:currentpassport",verifyAccess, createNewVisa)
 router.post("/create/:id",verifyAccess, createVisaByAdmin)
 router.put("/update/:id", verifyAccess,updateOneVisa)
 router.delete("/delete/:id",verifyAccess, deleteOneVisa)

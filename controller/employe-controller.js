@@ -67,22 +67,86 @@ const createNewEmployee = async (req, res) => {
 // ** role   admin
 const deleteOneEmployee = async (req, res) => {
   try {
-    // attributs
+    // Attributes
     const { id } = req.params;
-    // create
-    const deleteEmployee = await db.employee.destroy({
-      where: { id },
-    });
-    if (!deleteEmployee) {
-      return res.status(400).json({ error: "failed to delete" });
+
+    // Find the employee by ID
+    const employee = await db.employee.findByPk(id);
+    if (!employee) {
+      return res.status(404).json({ error: 'Employee not found' });
     }
-    // ==>
-    return res.status(202).json({ message: "deleted successfully" });
+
+    // Retrieve all passports associated with the employee
+    const passports = await db.passport.findAll({
+      where: {
+        employeeId: id,
+      },
+    });
+
+    // Delete each passport along with its associated visas
+    for (const passport of passports) {
+      // Find all visas associated with the passport
+      const visas = await db.visa.findAll({
+        where: {
+          passportId: passport.id,
+        },
+      });
+
+      // Delete each visa
+      for (const visa of visas) {
+        await visa.destroy();
+      }
+
+      await passport.destroy();
+    }
+
+    // Retrieve all missions associated with the employee
+    const missions = await db.mission.findAll({
+      where: {
+        employeeId: id,
+      },
+    });
+
+    for (const mission of missions) {
+      // Retrieve all invoices associated with the mission
+      const invoices = await db.invoice.findAll({
+        where: {
+          missionId: mission.id,
+        },
+      });
+
+      // Delete each invoice and its associated globalinvoices
+      for (const invoice of invoices) {
+        // Retrieve all globalinvoices associated with the invoiceID
+        const globalinvoices = await db.globalInvoice.findAll({
+          where: {
+            invoiceId: invoice.id,
+          },
+        });
+
+        // Delete each globalinvoice
+        for (const globalinvoice of globalinvoices) {
+          await globalinvoice.destroy();
+        }
+
+        await invoice.destroy();
+      }
+
+      await mission.destroy();
+    }
+
+    // Delete the employee
+    await employee.destroy();
+
+    // Return success response
+    return res.status(202).json({ message: 'Employee and associated data deleted successfully' });
   } catch (error) {
-    console.log("erro: ", error);
-    return res.status(500).json({ error: "server error" });
+    console.log('error: ', error);
+    return res.status(500).json({ error: 'Server error' });
   }
 };
+
+
 
 // ** desc   update employee
 // ** route  PUT api/employee/update/:id
@@ -201,6 +265,24 @@ const retriveOneEmployee = async (req, res) => {
   }
 };
 
+//retrieve status 
+const retriveStatus = async (req, res) => {
+  try {
+    // attributs
+    const id=req.params.id
+    
+    // retrive
+    const item = await db.employee.findByPk(id , {
+      attributes: ['activated'],
+    })
+    
+   
+    return res.status(200).json({ item });
+  } catch (error) {
+    console.log("erro: ", error);
+    return res.status(500).json({ error: "server error" });
+  }
+};
 
 // ** desc   find one employee
 // ** route  GET api/employee/one/:id
@@ -272,23 +354,30 @@ const retriveOneEmployeeProfil = async (req, res) => {
 // ** role   admin
 const retriveAllEmployee = async (req, res) => {
   try {
-    // retrive
+    const { id } = req.params; // Replace `yourEmployeeId` with the actual parameter name for your own employee ID
+
+    // Retrieve all employees except your own data
     const items = await db.employee.findAll({
+      where: {
+        id: {
+          [Op.ne]: id, // Exclude your own employee ID
+        },
+      },
       include: [
         {
           model: db.rank,
-        } /* , {
-                model: db.passport,
-                where: { id: Sequelize.col('employee.currentPassport') }
-              } */,
+        },
+        // Add other included models if needed
       ],
     });
+
     return res.status(200).json({ items });
   } catch (error) {
-    console.log("erro: ", error);
+    console.log("error: ", error);
     return res.status(500).json({ error: "server error" });
   }
 };
+
 
 module.exports = {
   createNewEmployee,
@@ -296,6 +385,7 @@ module.exports = {
   updateOneEmployee,
   retriveOneEmployee,
   retriveAllEmployee,
-  retriveOneEmployeeProfil
+  retriveOneEmployeeProfil,
+  retriveStatus
  
 };

@@ -92,28 +92,35 @@ const createPassportByAdmin = async (req, res) => {
 // ** role   admin
 const deleteOnePassport = async (req, res) => {
     try {
-        // attributs
-        const { id } = req.params;
-        // check rank is being uqed by an other employee
-        const checkUsage = await db.employee.findOne({ where: { currentPassport: id } });
-        if (checkUsage) {
-            return res.status(409).json({ error: "already active by an employee" })
-        }
-        // delete
-        const deletePassport = await db.passport.destroy({
-            where: { id }
-        });
-        if (!deletePassport) {
-            return res.status(400).json({ error: "failed to delete" })
-        }
-        // ==>
-        return res.status(202).json({ message: "deleted successfully" })
+      // Attributes
+      const { id } = req.params;
+  
+      // Check if the passport is being used by an employee
+      const checkUsage = await db.employee.findOne({ where: { currentPassport: id } });
+      if (checkUsage) {
+        return res.status(409).json({ error: "Already active by an employee" });
+      }
+  
+      // Delete the passport
+      const deletePassport = await db.passport.destroy({
+        where: { id }
+      });
+  
+      if (!deletePassport) {
+        return res.status(400).json({ error: "Failed to delete the passport" });
+      }
+  
+      // Delete all visas associated with the passport
+      await db.visa.destroy({ where: { passportId: id } });
+  
+      // Return success response
+      return res.status(202).json({ message: "Passport and associated visas deleted successfully" });
     } catch (error) {
-        console.log("erro: ", error)
-        return res.status(500).json({ error: "server error" })
+      console.log("error: ", error);
+      return res.status(500).json({ error: "Server error" });
     }
-}
-
+  };
+  
 // ** desc   update passport
 // ** route  PUT api/passport/update/:id
 // ** access private

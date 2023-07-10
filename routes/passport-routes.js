@@ -18,6 +18,6 @@ router.get("/employee",verifyAccess, retriveAllEmployeePassport)
 router.post("/create",verifyAccess, createNewPassport)
 router.post("/create/:id",verifyAccess, createPassportByAdmin)
 router.put("/update/:id",verifyAccess, updateOnePassport)
-router.delete("/delete/:id",verifyAccess, deleteOnePassport)
+router.delete("/delete/:id",/* verifyAccess, */ deleteOnePassport)
 
 module.exports = router

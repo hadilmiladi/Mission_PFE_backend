@@ -8,36 +8,56 @@ const db = require("../models");
 // ** access private
 // ** role   admin
 const retrieveInvoice = async (req, res) => {
-    try {
-      // params
-      const { id } = req.params;
-      
-      // retrieve
-      const item = await db.invoice.findOne({
-        where: { missionId: id },
-        include: [
-          {
-            model: db.mission,
-          },
-        ],
-      });
-      if (!item) {
-        return res.status(404).json({ error: "item doesnt exist" });
-      }
-      const employee = await db.employee.findOne({where:{id:item.mission.employeeId}})
-      if(!employee){
-        return res.status(404).json({error:"item doesn't exist"})
-      }
-      const prxdium = await db.rank.findOne({id:employee.rankId})
-      // Return the result
-      const client = await db.client.findOne({where:{id:item.mission.clientId}})
-      return res.status(200).json({ item:{item,prxdium,employee,client} });
-    } catch (error) {
-      console.log("error:", error);
-      return res.status(500).json({ error: "server error" });
+  try {
+    // params
+    const { id } = req.params;
+
+    // retrieve
+    const item = await db.invoice.findOne({
+      where: { missionId: id },
+      include: [
+        {
+          model: db.mission,
+          attributes: ['start',"id", 'finish', 'planePrice', 'hotelPrice', 'description', 'destination'],
+          include: [
+            {
+              model: db.employee,
+              attributes: ['firstname', 'lastname', 'email'],
+              include: [
+                {
+                  model: db.rank,
+                  attributes: ['perdiem'],
+                },
+              ],
+            },
+            {
+              model: db.client,
+              attributes: ['company_name', 'address', 'email'],
+            },
+          ],
+        },
+      ],
+    });
+
+    if (!item) {
+      return res.status(404).json({ error: "Item doesn't exist" });
     }
-  };
-  
+
+    // Extract necessary data
+    const mission = item.mission;
+    const employee = mission.employee;
+    const rank = employee.rank;
+    const client = mission.client;
+
+    // Return the result
+    return res.status(200).json({ item: { item, mission, employee, rank, client } });
+  } catch (error) {
+    console.log("Error:", error);
+    return res.status(500).json({ error: "Server error" });
+  }
+};
+
+
 // ** desc   find one invoice
 // ** route  GET api/invoice/all
 // ** access private
@@ -129,22 +149,42 @@ const retrieveInvoices = async (req, res) => {
 // ** role   admin
 const deleteOneInvoice = async (req, res) => {
   try {
-    // attributs
+    // Attributes
     const { id } = req.params;
-    // create
-    const deleteInvoice = await db.invoice.destroy({
-      where: { id },
-    });
-    if (!deleteInvoice) {
-      return res.status(400).json({ error: "failed to delete" });
+
+    // Find the invoice by ID
+    const invoice = await db.invoice.findByPk(id);
+    if (!invoice) {
+      return res.status(404).json({ error: "Invoice not found" });
     }
-    // ==>
-    return res.status(202).json({ message: "deleted successfully" });
+
+    // Find the global invoices with invoiceIds containing the invoice ID
+    const globalInvoices = await db.globalInvoice.findAll({
+      where: {
+        invoiceIds: {
+          [Op.contains]: [id],
+        },
+      },
+    });
+
+    // Delete the global invoices
+    for (const globalInvoice of globalInvoices) {
+      await globalInvoice.destroy();
+    }
+
+    // Delete the invoice
+    await invoice.destroy();
+
+    // Return success response
+    return res.status(202).json({ message: "Invoice and associated global invoices deleted successfully" });
   } catch (error) {
-    console.log("erro: ", error);
-    return res.status(500).json({ error: "server error" });
+    console.log("Error: ", error);
+    return res.status(500).json({ error: "Server error" });
   }
 };
+
+
+
 
 
 

@@ -115,47 +115,26 @@ const retrieveAllGlobalInvoices = async (req, res) => {
       return res.status(404).json({ error: 'Global invoice not found' });
     }
 
-    const invoices = await db.invoice.findAll({
-      where: {
-        id: { [Op.in]: globalInvoices.flatMap((globalInvoice) => globalInvoice.invoiceIds) },
-      },
-      include: [
-        {
-          model: db.mission,
-          include: [
-            {
-              model: db.employee,
-              attributes: ["firstname", "lastname", "email"],
-              include: [
-                {
-                  model: db.rank,
-                  attributes: ["perdiem"],
-                },
-              ],
-            },
-            {
-              model: db.client,
-              attributes: ["company_name", "email"],
-            },
-          ],
+    // Delete global invoices with empty invoices array
+    for (const globalInvoice of globalInvoices) {
+      const invoices = await db.invoice.findAll({
+        where: {
+          id: { [Op.in]: globalInvoice.invoiceIds },
         },
-      ],
-    });
+      });
 
-    // Map invoices to their respective global invoices
-    const globalInvoiceInvoices = globalInvoices.map((globalInvoice) => {
-      const associatedInvoices = invoices.filter((invoice) =>
-        globalInvoice.invoiceIds.includes(invoice.id)
-      );
-      return { ...globalInvoice.toJSON(), invoices: associatedInvoices };
-    });
+      if (invoices.length === 0) {
+        await globalInvoice.destroy();
+      }
+    }
 
-    return res.status(200).json({ globalInvoices: globalInvoiceInvoices });
+    return res.status(200).json({ globalInvoices });
   } catch (error) {
     console.log("error: ", error);
     return res.status(500).json({ error: "server error" });
   }
 };
+
 
 
 
@@ -232,7 +211,105 @@ const retrieveInvoicesByGlobalInvoice = async (req, res) => {
   }
 };
 
+
+const setPaid = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Update the paid status in the database
+    await db.globalInvoice.update(
+      {
+        paid: true
+      },
+      {
+        where: {
+          id: id
+        }
+      }
+    );
+
+    // Fetch the updated record from the database
+    const updatedInvoice = await db.globalInvoice.findOne({
+      where: {
+        id: id
+      }
+    });
+
+    console.log("updated invoice:", updatedInvoice);
+
+    // Send the response with the updated invoice
+    return res.status(202).json(updatedInvoice);
+  } catch (error) {
+    console.log("error: ", error);
+    return res.status(500).json({ error: "Server error" });
+  }
+};
+
+
+
+
+
 const retrieveGlobalInvoiceById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find the global invoice by ID
+    const globalInvoice = await db.globalInvoice.findByPk(id, {
+      include: [
+        {
+          model: db.client,
+          attributes: ['company_name', 'email', 'address'],
+        },
+      ],
+    });
+
+    if (!globalInvoice) {
+      return res.status(404).json({ error: 'Global invoice not found' });
+    }
+
+    // Retrieve the invoices associated with the global invoice
+    const invoices = await db.invoice.findAll({
+      where: {
+        id: globalInvoice.invoiceIds, // Retrieve invoices with matching IDs
+      },
+      include: [
+        {
+          model: db.mission,
+          attributes: ['start', 'finish', 'planePrice', 'hotelPrice', 'description', 'destination'],
+          include: [
+            {
+              model: db.employee,
+              attributes: ['firstname', 'lastname', 'email'],
+              include: [
+                {
+                  model: db.rank,
+                  attributes: ['perdiem'],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    sendMail(globalInvoice, invoices);
+    console.log('globalInvoice.id', globalInvoice);
+
+      // Send the response
+      if (res.status(200)) {
+        // Update globalInvoice.send to true
+        await db.globalInvoice.update({ send: true }, { where: { id: globalInvoice.id } });
+        console.log("send",globalInvoice.send)
+        return res.status(200).json({ globalInvoice, invoices });
+      }
+  } catch (error) {
+    console.log('error: ', error);
+    return res.status(500).json({ error: 'Server error' });
+  }
+ 
+};
+//********************************************************** */
+const retrieveGlobalInvoiceDetails = async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -241,7 +318,7 @@ const retrieveGlobalInvoiceById = async (req, res) => {
       include: [
         {
           model: db.client,
-          attributes: ['company_name', 'email'],
+          attributes: ['company_name', 'email','address'],
         },
         
       ]
@@ -259,6 +336,7 @@ const invoices = await db.invoice.findAll({
   include: [
     {
       model: db.mission,
+      attributes:["start","finish","planePrice","hotelPrice","description","destination"],
       include: [
         {
           model: db.employee,
@@ -275,19 +353,21 @@ const invoices = await db.invoice.findAll({
     },
   ],
 })
-sendMail(globalInvoice)
-console.log(globalInvoice)
+
     return res.status(200).json({ globalInvoice, invoices });
+  
   } catch (error) {
     console.log('error: ', error);
     return res.status(500).json({ error: 'Server error' });
   }
+ 
 };
-
 module.exports={
     createGlobalInvoice,
     retrieveAllGlobalInvoices,
     deleteOneglobalInvoice,
     retrieveInvoicesByGlobalInvoice,
-    retrieveGlobalInvoiceById
+    retrieveGlobalInvoiceById,
+    retrieveGlobalInvoiceDetails,
+    setPaid
 }
