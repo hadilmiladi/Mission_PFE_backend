@@ -131,7 +131,7 @@ const createNewMission = async (req, res) => {
 //create a validated mission 
 const createChefMission = async (req, res) => {
   try {
-
+      const id= req.params
     // attributs
     const {
       description,
@@ -160,9 +160,10 @@ const createChefMission = async (req, res) => {
     
     const checkEmployee = await db.employee.findOne({
       where: {
-       id: employeeId,
+       id: id,
       },
     });
+
     if (!checkEmployee) {
       return res
         .status(404)

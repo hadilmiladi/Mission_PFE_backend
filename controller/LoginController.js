@@ -19,6 +19,7 @@ passport.use(
       redirectUrl: 'https://localhost:3000/login',
       validateIssuer: false,
       passReqToCallback: false,
+      scope: ['openid', 'profile', 'email'],
     },
 
     async (iss, sub, profile, accessToken, refreshToken, done) => {
@@ -27,11 +28,11 @@ passport.use(
         const { oid, displayName, emails } = profile;
         const email = emails[0].value;
 
-         // Check if the email contains "nexus"
+          // Check if the email contains "nexus"
          if (!email.includes('nexus')) {
           return done(null, false, { message: 'Only users with email containing "nexus" can login' });
         }
-
+ 
         // Find or create the user in your database based on the authenticated user's information
         let user = await db.User.findOne({ where: { email } });
         if (!user) {
@@ -114,8 +115,8 @@ module.exports = {
   loginEmployee,
 };
 
-
  */
+
 
 
 
@@ -144,7 +145,8 @@ const loginEmployee = async (req,res) =>{
             },
           ],
         });
-        let role;
+        let role=(item.rank.permission);
+        console.log('role11111',role)
         switch(item.rank.permission){
           case "admin":
             role="admin";
@@ -154,22 +156,26 @@ const loginEmployee = async (req,res) =>{
             break;
           case "ceo":
             role="ceo";
-            case "chef du projet":
+            break;
+          case "chef du projet":
             role="chef du projet";
             break;
         }
         if (!item) {
             return res.status(404).json({ error: "item doesnt exist" })
         }
+        console.log("item.rank.permission",item.rank.permission)
         const token =await jwt.sign({id:item.id,role},process.env.ACCESS_TOKEN_SECRET,{
             expiresIn:"7d"
         })
+        console.log("role",role)
         return res.status(200).json({ message: "loggd in successfully",role,token });
     } catch (error) {
         console.log("erro: ", error)
         return res.status(500).json({ error: "server error" })
     
 }
+
     };
 
     module.exports={

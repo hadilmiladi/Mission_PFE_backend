@@ -22,7 +22,7 @@ router.get("/employee/:id",verifyAccess, retriveAllEmployeeMissions);
 //router.get("/employee",verifyAccess, retriveEmployeeMissions);
 router.get("/one/:id", retriveOneMission);
 router.post("/create",verifyAccess, createNewMission);
-router.post("/createbychef",verifyAccess, createChefMission);
+router.post("/createbychef/:id",verifyAccess, createChefMission);
 router.post("/create/employee/:id",verifyAccess, createMissionByEmployee);
 router.put("/update/:id",verifyAccess, updateOneMission);
 router.put("/status/set/:id",verifyAccess, setMissionStatus);
