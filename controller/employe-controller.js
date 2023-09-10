@@ -61,6 +61,7 @@ const createNewEmployee = async (req, res) => {
   }
 };
 
+
 // ** desc   delete employee
 // ** route  DELETE api/employee/delete/:id
 // ** access private
@@ -354,24 +355,37 @@ const retriveOneEmployeeProfil = async (req, res) => {
 // ** role   admin
 const retriveAllEmployee = async (req, res) => {
   try {
-    const { id } = req.params; // Replace `yourEmployeeId` with the actual parameter name for your own employee ID
 
     // Retrieve all employees except your own data
     const items = await db.employee.findAll({
-      where: {
-        id: {
-          [Op.ne]: id, // Exclude your own employee ID
-        },
-      },
       include: [
         {
           model: db.rank,
+          where: {
+            permission: {
+              [Op.ne]: "admin",
+            },
+          },
         },
-        // Add other included models if needed
       ],
     });
-
     return res.status(200).json({ items });
+  } catch (error) {
+    console.log("error: ", error);
+    return res.status(500).json({ error: "server error" });
+  }
+};
+
+const retriveEmployeeName = async (req, res) => {
+  try {
+      const id= req.params.id
+    // Retrieve all employees except your own data
+    const items = await db.employee.findOne({
+     where:{
+      id:id
+     }
+    });
+    return res.status(200).json( items.firstname );
   } catch (error) {
     console.log("error: ", error);
     return res.status(500).json({ error: "server error" });
@@ -386,6 +400,8 @@ module.exports = {
   retriveOneEmployee,
   retriveAllEmployee,
   retriveOneEmployeeProfil,
-  retriveStatus
+  retriveStatus,
+  retriveEmployeeName
+  
  
 };

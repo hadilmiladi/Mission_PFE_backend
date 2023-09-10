@@ -186,9 +186,10 @@ const retriveOnePassport = async (req, res) => {
 // ** role   admin
 const retriveAllEmployeePassport = async (req, res) => {
     try {
-        console.log("#########################################################################################################",req.employee)
+        const {employee}= req.params
+        console.log("#########################################################################################################",employee)
         const items = await db.passport.findAll({
-          where: { employeeId: req.employee.id },
+          where: { employeeId: employee },
           include: [
             {
               model: db.employee,

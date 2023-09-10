@@ -14,6 +14,7 @@ const VisaRoutes = require("./routes/visa-routes");
 const PassportRoutes = require("./routes/passport-routes");
 const invoiceRoutes = require('./routes/invoiceRoutes');
 const globalinvoiceRoutes =require('./routes/globalinvoiceRoutes')
+const configmail=require('./routes/configmailRoutes')
 
 dotenv.config();
 // app setup
@@ -51,8 +52,9 @@ app.use("/passport", PassportRoutes);
 app.use("/visa", VisaRoutes);
 app.use("/invoice",invoiceRoutes)
 app.use("/globalinvoice",globalinvoiceRoutes);
+app.use("/mailconfig",configmail)
 // connect
-port = process.env.PORT || 8088;
+port = process.env.PORT || 8080;
 app.listen(port, () => {
   console.log(`App running on port ${port}.`);
 });

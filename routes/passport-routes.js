@@ -14,7 +14,7 @@ const {
 const verifyAccess = require("../middleware/verify-access")
 router.get("/all",/* verifyAccess, */ retriveAllPassport);
 router.get("/one/:id",verifyAccess, retriveOnePassport)
-router.get("/employee",verifyAccess, retriveAllEmployeePassport)
+router.get("/employee/:employee",/* verifyAccess, */ retriveAllEmployeePassport)
 router.post("/create",verifyAccess, createNewPassport)
 router.post("/create/:id",verifyAccess, createPassportByAdmin)
 router.put("/update/:id",verifyAccess, updateOnePassport)

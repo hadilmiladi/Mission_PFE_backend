@@ -12,10 +12,16 @@ module.exports = (sequelize, DataTypes) => {
     type: DataTypes.DATE,
     allowNull: false,
   },
-  /* totalAmount: {
-    type: DataTypes.FLOAT,
-    allowNull: false,
-  }, */
+ sendat :{
+  type: DataTypes.DATE,
+  allowNull: true
+ },
+
+ deadline:{
+  type: DataTypes.BOOLEAN,
+  defaultValue:false
+ },
+ 
   paid: {
     type: DataTypes.BOOLEAN,
     default: false,

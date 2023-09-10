@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const {sendMail} = require ("../controller/sendmail") 
+const { sendMailGmail, sendMailOutlook} = require ("../controller/sendmail") 
 // function
 const {
     createGlobalInvoice,
@@ -9,7 +9,8 @@ const {
     retrieveInvoicesByGlobalInvoice,
     retrieveGlobalInvoiceById,
     retrieveGlobalInvoiceDetails,
-    setPaid
+    setPaid,
+    updateDeadLine
   
   } = require("../controller/globalinvoice-controller");
   const verifyAccess = require("../middleware/verify-access")
@@ -20,5 +21,7 @@ const {
   router.post('/global/:id',retrieveGlobalInvoiceById)
   router.get('/global/:id',retrieveGlobalInvoiceDetails)
   router.put('/set/:id',setPaid)
-  router.post("/sendmail", sendMail)
+  router.put('/deadline',updateDeadLine)
+  router.post("/sendmail", sendMailGmail)
+  router.post("/sendmail", sendMailOutlook)
   module.exports = router

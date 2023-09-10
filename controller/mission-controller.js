@@ -60,11 +60,11 @@ const createNewMission = async (req, res) => {
         .json({ error: "invalid passport", code: "passport" });
     }
     // get employee current passport
-    const currentPassport = await db.passport.findOne({
+   /*  const currentPassport = await db.passport.findOne({
       where: { id: checkEmployee.currentPassport },
-    });
+    }); */
     // check nationalite
-    if (currentPassport.nationality !== destination) {
+ /*    if (currentPassport.nationality !== destination) {
       // check visa
       const checkVisa = await db.visa.findOne({
         where: {
@@ -78,7 +78,7 @@ const createNewMission = async (req, res) => {
       if (checkVisa) {
         return res.status(409).json({ error: "invalid visa", code: "visa" });
       }
-    }
+    } */
     // check mission date
     const checkMission = await db.mission.findAll({
       where: {
@@ -91,7 +91,8 @@ const createNewMission = async (req, res) => {
         },
         accepted: true,
         declined: false,
-      }, //didn't understand
+        validated:false
+      }, 
     });
     //
     console.log('checkMission: ***********************************************************************************************************************************************', checkMission);
@@ -117,6 +118,8 @@ const createNewMission = async (req, res) => {
       clientId,
       employeeId,
       accepted: false,
+      declined:false,
+      validated: true
     });
     if (!newMission) {
       return res.status(400).json({ error: "failed to create" });
@@ -180,7 +183,7 @@ const createChefMission = async (req, res) => {
         .status(409)
         .json({ error: "invalid passport", code: "passport" });
     }
-    // get employee current passport
+    /* // get employee current passport
     const currentPassport = await db.passport.findOne({
       where: { id: checkEmployee.currentPassport },
     });
@@ -199,7 +202,7 @@ const createChefMission = async (req, res) => {
       if (checkVisa) {
         return res.status(409).json({ error: "invalid visa", code: "visa" });
       }
-    }
+    } */
     // check mission date
     const checkMission = await db.mission.findAll({
       where: {
@@ -212,7 +215,7 @@ const createChefMission = async (req, res) => {
         },
         accepted: true,
         declined: false,
-      }, //didn't understand
+      },
     });
     //
     console.log('checkMission: ***********************************************************************************************************************************************', checkMission);
@@ -304,7 +307,7 @@ const employeeId=req.employee.id
         .status(409)
         .json({ error: "invalid passport", code: "passport" });
     }
-    // get employee current passport
+  /*   // get employee current passport
     const currentPassport = await db.passport.findOne({
       where: { id: checkEmployee.currentPassport },
     });
@@ -323,7 +326,7 @@ const employeeId=req.employee.id
       if (checkVisa) {
         return res.status(409).json({ error: "invalid visa", code: "visa" });
       }
-    }
+    } */
     // check mission date
     const checkMission = await db.mission.findOne({
       where: {

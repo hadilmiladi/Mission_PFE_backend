@@ -28,16 +28,21 @@ module.exports = (sequelize, DataTypes) => {
           isEmail: true,
         },
       },
+      password: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        unique: true,
+      },
       activated: {
         type: DataTypes.BOOLEAN,
-        defaultValue: true,
+        defaultValue: false,
       },
       currentPassport: {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
       rankId: {
-        type: DataTypes.INTEGER, // Assuming rankId is of INTEGER type
+        type: DataTypes.INTEGER, 
         allowNull: true,
       },
     },

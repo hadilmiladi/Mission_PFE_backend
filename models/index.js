@@ -37,6 +37,7 @@ db.mission = require("./mission-model")(sequelize, Sequelize);
 db.invoice = require("./invoice-model")(sequelize, Sequelize);
 db.client = require("./client-model")(sequelize, Sequelize);
 db.globalInvoice = require("./globalInvoice-model")(sequelize, Sequelize);
+db.mailconfig=require('./mailConfig-model')(sequelize, Sequelize);
 // 
 
 
@@ -86,7 +87,7 @@ db.globalInvoice.associate(db);
     try {
         await sequelize.authenticate();
         console.log('Connection has been established successfully.');
-        await sequelize.sync({ alter: false });
+        await sequelize.sync({ alter: true });
     } catch (error) {
         console.error('Unable to connect to the database:', error);
     }

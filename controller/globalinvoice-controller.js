@@ -1,100 +1,105 @@
 const { Op } = require("sequelize");
 const db = require("../models");
-const {sendMail} = require ("./sendmail")
+const {sendMailGmail,sendMailOutlook,getAll} = require ("./sendmail")
+
 const createGlobalInvoice = async (req, res) => {
-    try {
-      const { start, end, clientId } = req.body;
-      
-      
-     
-  
-      
-      let queries = {
+  try {
+    const { start, end, clientId } = req.body;
+
+    if (clientId === 'all') {
+      const allClients = await db.client.findAll();
+
+      for (const client of allClients) {
+        const invoiceQueries = {
+          start: { [Op.gte]: new Date(start) },
+          end: { [Op.lte]: new Date(end) },
+          clientId: client.id,
+        };
+
+        await createGlobalInvoiceForQueries(invoiceQueries, start, end, client.id);
+      }
+
+      return res.status(200).json({ message: 'Global invoices created successfully' });
+    } else {
+      const queries = {
         start: { [Op.gte]: new Date(start) },
         end: { [Op.lte]: new Date(end) },
         clientId: clientId,
       };
-     console.log("queries: ",queries)
-     // Validate the start and end parameters
-     if (!start || !end || clientId==='all') {
-      return res.status(400).json({ error: 'Missing required parameters' , code:'parameters '});
-    }
-      // Check if there is an existing global invoice with the same queries
-    const existingGlobalInvoice = await db.globalInvoice.findOne({
-      where: {
-        start:start,
-        end:end
-      },
-    });
 
-    if (existingGlobalInvoice) {
-      // If an existing global invoice is found, return an error indicating it already exists
-      return res.status(400).json({ error: 'Global invoice already exists with the same queries', code:'exist' });
-    }
+    
 
-     // Check if there are any invoices for the specified date range
-     const hasInvoices = await db.invoice.count({
-      where: queries,
-    });
+      await createGlobalInvoiceForQueries(queries, start, end, clientId);
 
-    if (hasInvoices === 0) {
-      return res.status(400).json({ error: 'No invoices found for the specified date range', code: 'no_invoices' });
+      return res.status(200).json({ message: 'Global invoice created successfully' });
     }
-   
-      // Retrieve the invoices based on the queries
-      const invoices = await db.invoice.findAll({
-        where: {
-          ...queries
-        },
-        include: [
-          {
-            model: db.mission,
-            include: [
-              {
-                model: db.employee,
-                attributes: ["firstname", "lastname", "email"],
-                include: [
-                  {
-                    model: db.rank,
-                    attributes: ["perdiem"],
-                  },
-                ],
-              },
-              {
-                model: db.client,
-                attributes: ["company_name", "email"],
-              },
-            ],
-          },
-        ],
-      });
-  //console.log("iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii",invoices)
-      // Calculate the total amount for the global invoice
-      let totalAmount = 0;
-      invoices.forEach((invoice) => {
-        // Assuming there's a "amount" field in the invoice model
-        totalAmount += invoice.amount || 0;
-      });
-  
-      // Create the global invoice record in the database
-      const globalInvoice = await db.globalInvoice.create({
-        // Set the necessary fields for the global invoice
-        // For example, you might have fields like "start", "end", "totalAmount", etc.
-        start: start,
-        end: end,
-        clientId: clientId,
-        totalAmount: totalAmount,
-        send: false,
-        paid: false,
-        invoiceIds: invoices.map((invoice) => invoice.id), // Store the IDs of the retrieved invoices
-      });
-      console.log("querrrrrrrrrriiiiiiiiiizzzzzz",queries)
-      return res.status(200).json({ globalInvoice });
-    } catch (error) {
-      console.log("error: ", error);
-      return res.status(500).json({ error: "Server error" });
+  } catch (error) {
+    //console.log('error: ', error.code);
+    if (error.code==='parameters'){
+      return res.status(400).json({ code: 'parameters' });
     }
-  };
+    else if (error.code==='exist'){
+      return res.status(400).json({ code: 'exist' });
+    }
+    else if (error.code==='no_invoices'){
+      return res.status(400).json({ code: 'no_invoices' });
+    }
+    return res.status(500).json({ error: 'Server error' });
+  }
+};
+
+const createGlobalInvoiceForQueries = async (queries, start, end, clientId) => {
+    // Validate the start and end parameters
+    if (start===end) {
+      throw { error: 'No parameters', code: 'parameters' };
+    }
+  const existingGlobalInvoice = await db.globalInvoice.findOne({
+    where: {
+      start:start,
+      end:end,
+      clientId:clientId,
+    },
+  });
+
+  if (existingGlobalInvoice) {
+    throw { error: 'Global invoice already exists with the same queries', code: 'exist' };
+  }
+
+  const hasInvoices = await db.invoice.count({
+    where: queries,
+  });
+
+  if (hasInvoices === 0) {
+    throw { error: 'No invoices found for the specified date range', code: 'no_invoices' };
+  }
+
+  const invoices = await db.invoice.findAll({
+    where: queries,
+    include: [
+      // Include your necessary associations
+    ],
+  });
+
+  let totalAmount = 0;
+  invoices.forEach((invoice) => {
+    totalAmount += invoice.amount || 0;
+  });
+
+  await db.globalInvoice.create({
+    start: start,
+    end: end,
+    clientId: clientId,
+    totalAmount: totalAmount,
+    send: false,
+    paid: false,
+    invoiceIds: invoices.map((invoice) => invoice.id),
+  });
+};
+
+    
+
+
+
   
 // ** desc   find one invoice
 // ** route  GET api/invoice/all
@@ -127,13 +132,65 @@ const retrieveAllGlobalInvoices = async (req, res) => {
         await globalInvoice.destroy();
       }
     }
-
+    await updateDeadLine();
+    
     return res.status(200).json({ globalInvoices });
+    
   } catch (error) {
     console.log("error: ", error);
     return res.status(500).json({ error: "server error" });
   }
 };
+
+
+//deadline 
+
+ const updateDeadLine = async () => {
+  try {
+      
+        const globalInvoices = await db.globalInvoice.findAll({
+          where: {
+            send: true, 
+            paid: false
+          }
+        });
+    
+        const today = new Date(); // Get today's date
+//console.log("globalInvoices",globalInvoices)
+const updatedIds = [];
+        for (const globalInvoice of globalInvoices){
+          console.log('sendAt:', globalInvoice.sendat);
+          const delais = new Date(globalInvoice.sendat);
+          delais.setDate(delais.getDate() + 30);
+          console.log('delais:', delais);
+          console.log("id",globalInvoice.id)
+          
+           // Compare delais with today's date
+           if ((delais.toDateString() !== today.toDateString())) {
+            await db.globalInvoice.update(
+              {
+                deadline: true,
+              },
+              {
+                where:{
+                  id:globalInvoice.id
+                }
+              }
+            )
+            updatedIds.push(globalInvoice.id);
+            
+      }
+      
+        
+        };
+        console.log("ids",updatedIds)
+        return updatedIds
+    }
+    catch (error) {
+      console.log("error: ", error);
+      return error
+    }
+  }
 
 
 
@@ -219,7 +276,8 @@ const setPaid = async (req, res) => {
     // Update the paid status in the database
     await db.globalInvoice.update(
       {
-        paid: true
+        paid: true,
+        
       },
       {
         where: {
@@ -235,14 +293,16 @@ const setPaid = async (req, res) => {
       }
     });
 
-    console.log("updated invoice:", updatedInvoice);
-
+    console.log("updated invoice:^^^^^^^^^^^^^^^^^^^^^^^^^^^^", updatedInvoice);
+    
     // Send the response with the updated invoice
     return res.status(202).json(updatedInvoice);
+    
   } catch (error) {
     console.log("error: ", error);
     return res.status(500).json({ error: "Server error" });
   }
+  
 };
 
 
@@ -292,14 +352,29 @@ const retrieveGlobalInvoiceById = async (req, res) => {
       ],
     });
 
-    sendMail(globalInvoice, invoices);
+    /*  */
+    let getall= await getAll();
+    console.log('gggggeeeeeetttttt',getall.typeofmail)
+    if(getall.typeofmail==='gmail' ){
+      sendMailGmail(globalInvoice, invoices);
+    }
+    else if(getall.typeofmail==='outlook'){
+      sendMailOutlook(globalInvoice, invoices);
+    }
     console.log('globalInvoice.id', globalInvoice);
 
       // Send the response
       if (res.status(200)) {
         // Update globalInvoice.send to true
-        await db.globalInvoice.update({ send: true }, { where: { id: globalInvoice.id } });
+        await db.globalInvoice.update({ send: true, sendat:new Date() }, { where: { id: globalInvoice.id } });
         console.log("send",globalInvoice.send)
+
+        const delais = new Date(globalInvoice.sendat);
+  delais.setDate(delais.getDate() + 30);
+
+
+        console.log("sendattttttttttttttttttttt",globalInvoice.sendat)
+        console.log("sendat",delais)
         return res.status(200).json({ globalInvoice, invoices });
       }
   } catch (error) {
@@ -369,5 +444,36 @@ module.exports={
     retrieveInvoicesByGlobalInvoice,
     retrieveGlobalInvoiceById,
     retrieveGlobalInvoiceDetails,
-    setPaid
+    setPaid,
+    updateDeadLine
 }
+
+
+
+    /* if (res.status(200)) {
+      
+        const globalInvoices = await db.globalInvoice.findAll({
+          where: {
+            send: true, // Filter for globalInvoices where send is true
+          }
+        });
+    
+        if (!globalInvoices) {
+          return res.status(404).json({ error: 'Global invoice not found' });
+        }
+        const today = new Date(); // Get today's date
+
+        globalInvoices.forEach((globalInvoice) => {
+          console.log('sendAt:', globalInvoice.sendat);
+          const delais = new Date(globalInvoice.sendat);
+          delais.setDate(delais.getDate() + 30);
+          console.log('delais:', delais);
+          
+           // Compare delais with today's date
+           if ((delais.toDateString() === today.toDateString())) {
+        return false
+      }
+     
+        
+        });
+    } */
