@@ -1,9 +1,14 @@
+const { getAll }= require ('./mailing-controller');
+const {
+  sendMissionGmail,
+  sendMissionOutlook,
+} =require ('./sendMission');
+
 // modules
 const { Op } = require("sequelize");
 const Sequelize = require("sequelize");
 // db
 const db = require("../models");
-const { Console } = require("console");
 
 // ** desc   create mission
 // ** route  POST api/mission/create
@@ -53,41 +58,16 @@ const createNewMission = async (req, res) => {
         .status(409)
         .json({ error: "employee is not activated", code: "activated" });
     }
-    // check passport
-    if (checkEmployee.currentPassport === null) {
-      return res
-        .status(409)
-        .json({ error: "invalid passport", code: "passport" });
-    }
-    // get employee current passport
-   /*  const currentPassport = await db.passport.findOne({
-      where: { id: checkEmployee.currentPassport },
-    }); */
-    // check nationalite
- /*    if (currentPassport.nationality !== destination) {
-      // check visa
-      const checkVisa = await db.visa.findOne({
-        where: {
-          passportId: currentPassport.id,
-          valable_for: destination,
-          expiresAt: {
-            [Op.gte]: new Date(finish),
-          },
-        },
-      });
-      if (checkVisa) {
-        return res.status(409).json({ error: "invalid visa", code: "visa" });
-      }
-    } */
+   
     // check mission date
     const checkMission = await db.mission.findAll({
       where: {
         employeeId,
         start: {
-          [Op.lte]: start, // date is the date you are interested in
+          [Op.lte]: start,
         },
         finish: {
-          [Op.gte]: finish, // date is the date you are interested in
+          [Op.gte]: finish, 
         },
         accepted: true,
         declined: false,
@@ -134,7 +114,7 @@ const createNewMission = async (req, res) => {
 //create a validated mission 
 const createChefMission = async (req, res) => {
   try {
-      const id= req.params
+      const employeeId=req.employee.id
     // attributs
     const {
       description,
@@ -144,11 +124,10 @@ const createChefMission = async (req, res) => {
       destination,
       planeId,
       planeLink,
-      planePrice,
+      /* planePrice, */
       hotelLink,
-      hotelPrice,
+      /* hotelPrice, */
       clientId,
-      employeeId,
     } = req.body;
     console.log(req.body)
     // check client exist
@@ -163,62 +142,30 @@ const createChefMission = async (req, res) => {
     
     const checkEmployee = await db.employee.findOne({
       where: {
-       id: id,
+       id:employeeId,
       },
     });
-
-    if (!checkEmployee) {
-      return res
-        .status(404)
-        .json({ error: "employee doesn't exist", code: "employee" });
-    }
     if (checkEmployee && checkEmployee.activated === false) {
       return res
         .status(409)
         .json({ error: "employee is not activated", code: "activated" });
     }
-    // check passport
-    if (checkEmployee.currentPassport === null) {
-      return res
-        .status(409)
-        .json({ error: "invalid passport", code: "passport" });
-    }
-    /* // get employee current passport
-    const currentPassport = await db.passport.findOne({
-      where: { id: checkEmployee.currentPassport },
-    });
-    // check nationalite
-    if (currentPassport.nationality !== destination) {
-      // check visa
-      const checkVisa = await db.visa.findOne({
-        where: {
-          passportId: currentPassport.id,
-          valable_for: destination,
-          expiresAt: {
-            [Op.gte]: new Date(finish),
-          },
-        },
-      });
-      if (checkVisa) {
-        return res.status(409).json({ error: "invalid visa", code: "visa" });
-      }
-    } */
+    
     // check mission date
     const checkMission = await db.mission.findAll({
       where: {
         employeeId,
         start: {
-          [Op.lte]: start, // date is the date you are interested in
+          [Op.lte]: start, 
         },
         finish: {
-          [Op.gte]: finish, // date is the date you are interested in
+          [Op.gte]: finish, 
         },
         accepted: true,
         declined: false,
       },
     });
-    //
-    console.log('checkMission: ***********************************************************************************************************************************************', checkMission);
+    
 
     if (checkMission.length > 0) {
       return res
@@ -235,9 +182,9 @@ const createChefMission = async (req, res) => {
       destination,
       planeId,
       planeLink,
-      planePrice,
+      /* planePrice, */
       hotelLink,
-      hotelPrice,
+      /* hotelPrice, */
       clientId,
       employeeId,
       accepted: false,
@@ -270,9 +217,7 @@ const employeeId=req.employee.id
       destination,
       planeId,
       planeLink,
-      /* planePrice, */
       hotelLink,
-      /* hotelPrice, */
       clientId,
       
     } = req.body;
@@ -301,45 +246,20 @@ const employeeId=req.employee.id
         .status(409)
         .json({ error: "employee is not activated", code: "activated" });
     }
-    // check passport
-    if (checkEmployee.currentPassport === null) {
-      return res
-        .status(409)
-        .json({ error: "invalid passport", code: "passport" });
-    }
-  /*   // get employee current passport
-    const currentPassport = await db.passport.findOne({
-      where: { id: checkEmployee.currentPassport },
-    });
-    // check nationalite
-    if (currentPassport.nationality !== destination) {
-      // check visa
-      const checkVisa = await db.visa.findOne({
-        where: {
-          passportId: currentPassport.id,
-          valable_for: destination,
-          expiresAt: {
-            [Op.gte]: new Date(finish),
-          },
-        },
-      });
-      if (checkVisa) {
-        return res.status(409).json({ error: "invalid visa", code: "visa" });
-      }
-    } */
+   
     // check mission date
     const checkMission = await db.mission.findOne({
       where: {
         employeeId,
         start: {
-          [Op.lte]: start, // date is the date you are interested in
+          [Op.lte]: start, 
         },
         finish: {
-          [Op.gte]: finish, // date is the date you are interested in
+          [Op.gte]: finish, 
         },
         accepted: true,
         declined: false,
-      }, //didn't understand
+      }, 
     });
     //
     if (checkMission) {
@@ -357,9 +277,7 @@ const employeeId=req.employee.id
       destination,
       planeId,
       planeLink,
-     /*  planePrice, */
       hotelLink,
-      /* hotelPrice, */
       clientId,
       employeeId,
       accepted: false,
@@ -385,37 +303,16 @@ const deleteOneMission = async (req, res) => {
     const { id } = req.params;
 
     // Find the mission by ID
-    const mission = await db.mission.findByPk(id);
+    const mission = await db.mission.findOne({
+      where:{
+        id:id,
+        accepted:false,
+        validated:false,
+        declined:true
+      }});
     if (!mission) {
-      return res.status(404).json({ error: "Mission not found" });
+      return res.status(400).json({ error: "can not delete a non declined mission" });
     }
-
-    // Find invoices with the ID of the mission
-    const invoices = await db.invoice.findAll({
-      where: {
-        missionId: id,
-      },
-    });
-
-    // Delete the invoices if they exist
-    for (const invoice of invoices) {
-        // Retrieve all globalinvoices associated with the invoiceID
-        const globalinvoices = await db.globalInvoice.findAll({
-          where: {
-            invoiceIds: {
-              [Op.contains]: [invoice.id],
-            }
-          },
-        });
-
-        // Delete each globalinvoice
-        for (const globalinvoice of globalinvoices) {
-          await globalinvoice.destroy();
-        }
-
-        await invoice.destroy();
-    }
-
     // Delete the mission
     await mission.destroy();
 
@@ -485,10 +382,10 @@ const updateOneMission = async (req, res) => {
         },
         employeeId: checkMission.employeeId,
         start: {
-          [Op.lte]: start, // date is the date you are interested in
+          [Op.lte]: start, 
         },
         finish: {
-          [Op.gte]: finish, // date is the date you are interested in
+          [Op.gte]: finish, 
         },
         accepted: true,
         declined: false,
@@ -550,20 +447,27 @@ const setMissionStatus = async (req, res) => {
     const { id } = req.params;
     // attributs
     const { accepted, declined, validated } = req.body;
-    console.log("########################################################################################################################################################################"/* ,req.body */)
-    /* if (accepted !== "true" && declined !== "true" && validated !=="true") {
-      return res.status(406).json({ message: "operation invalid" });
-    } */
+   
     
     // check mission exist
-    const checkMission = await db.mission.findByPk(Number(id));
-    //console.log("this is check mission",checkMission)
+    const checkMission = await db.mission.findByPk(id,{
+      include:[
+        {
+        model: db.client,
+        attributes:['company_name','email']
+        },
+        {
+          model: db.employee,
+          attributes:['firstname','lastname','email']
+          },
+      ]});
+    
     if (!checkMission) {
       return res.status(404).json({ message: "mission doesn't exist",code:"mission" });
     }
-   
+    console.log("checcckkkk",checkMission)
     //get employe
-    const getEmployee = await db.employee.findByPk(Number(checkMission.employeeId),{
+    const getEmployee = await db.employee.findByPk(checkMission.employeeId,{
       include: [
         {
           model: db.rank,
@@ -655,6 +559,13 @@ const setMissionStatus = async (req, res) => {
      return res.status(202).json({ message: "Invoice and associated global invoices deleted successfully" });
   } else if (validated === true) {
     message = "Mission validated successfully";
+    let getall= await getAll();
+    if(getall.typeofmail==='gmail' ){
+      sendMissionGmail(checkMission);
+    }
+    else if(getall.typeofmail==='outlook'){
+      sendMissionOutlook(checkMission);
+    }
   } else {
     message = "NO";
   }
@@ -670,58 +581,7 @@ const setMissionStatus = async (req, res) => {
 
 
 
-/* const setConfirmMission  = async (req, res) => {
-  try {
-    // params
-    const { id } = req.params;
-     // check mission exist
-     const checkMission = await db.mission.findByPk(Number(id));
-     if (!checkMission) {
-       return res.status(404).json({ message: "mission doesn't exist",code:"mission" });
-     }
-    
-     if(checkMission.validated===false){
-      return res.status(409).json({ message: "mission doesn't exist",code:"mission" })
-     }
 
-     const getEmployee=await db.employee.findOne({
-      where: {
-        id: checkMission.employeeId
-      }
-     })
-      // update
-    const setMission = await db.mission.update(
-      {
-        accepted: true , acceptedAt: Date.now()
-      },
-      { where: { id } })
-      // create invoice
-                //create
-    const newInvoice = await db.invoice.create({
-      from:checkMission.start,
-      to:checkMission.finish,
-      missionId:checkMission.id,
-      perdiem:getEmployee.rank.perdiem,
-      planePrice: checkMission.planePrice,
-      hotelPrice:checkMission.hotelPrice,
-      employeeId:checkMission.employeeId,
-      clientId:checkMission.clientId
-    });
-    if (!newInvoice) {
-      return res.status(400).json({ error: "failed to create" });
-    } 
-    
-    if (!setMission) {
-      return res.status(400).json({ message: "mission doesn't exist" });
-    }
-    //
-    return res.status(202).json()}
-   catch (error) {
-    console.log("erro: ", error);
-    return res.status(500).json({ error: "server error" });
-
-  }}
- */
 // ** desc   find one mission
 // ** route  GET api/mission/one/:id
 // ** access private
@@ -762,11 +622,11 @@ const retriveOneMission = async (req, res) => {
       return res.status(404).json({ error: "item doesnt exist" });
     }
 
-    const passports = await db.passport.findAll({ where: { employeeId: id } });
+    
     const invoice = await db.invoice.findOne({ where: { missionId: id } });
-    //const empl = await db.employee.findOne({ where: { missionId: id } });
+    
     // ==>
-    return res.status(200).json({ item, passports, invoice });
+    return res.status(200).json({ item,  invoice });
   } catch (error) {
     console.log("erro: ", error);
     return res.status(500).json({ error: "server error" });
@@ -862,7 +722,7 @@ const retriveAllMission = async (req, res) => {
   }
 };
 
-        
+
    
 module.exports = {
   createNewMission,
@@ -872,7 +732,6 @@ module.exports = {
   retriveAllMission,
   retriveAllEmployeeMissions,
   setMissionStatus,
- // retriveEmployeeMissions,
   createMissionByEmployee,
   deleteallMission,
   retriveAll,

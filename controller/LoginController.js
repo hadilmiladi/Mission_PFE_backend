@@ -9,11 +9,11 @@ const loginEmployee = async (req,res) =>{
     try {
         // attributs
         const { email } = req.params;
-        console.log('emailllllllllllllllllllllaaaaaaaaaaaaaaaaaaaaaaa',email)
+        
         // retrieve 
         const item = await db.employee.findOne({
           where: {
-            email,
+            email,     
           },
           include: [
             {
@@ -21,9 +21,18 @@ const loginEmployee = async (req,res) =>{
               attributes: ["name", "permission", "perdiem"],
             },
           ],
+        
         });
+
+        if (!item) {
+          return res.status(404).json({ error: "item doesnt exist", code:"doesnt exist" })
+      }
+     if(item.activated===false){
+          return res.status(401).json({error: "user unauthorized" , code:"unauthorized"})
+      }
+
         let role=(item.rank.permission);
-        console.log('role11111',role)
+        console.log('role11111',item)
         switch(item.rank.permission){
           case "admin":
             role="admin";
@@ -38,9 +47,7 @@ const loginEmployee = async (req,res) =>{
             role="chef du projet";
             break;
         }
-        if (!item) {
-            return res.status(404).json({ error: "item doesnt exist" })
-        }
+     
         console.log("item.rank.permission",item.rank.permission)
         const token =await jwt.sign({id:item.id,role},process.env.ACCESS_TOKEN_SECRET,{
             expiresIn:"7d"

@@ -20,7 +20,7 @@ const createNewClient = async(req, res) => {
         }
         const checkCode = await db.client.findOne({ where: { code } });
         if (checkCode) {
-            return res.status(409).json({ error: "email already used",code:"code" })
+            return res.status(409).json({ error: "code already used",code:"code" })
         }
         // create
         const newClient = await db.client.create({
@@ -32,13 +32,24 @@ const createNewClient = async(req, res) => {
         if (!newClient) {
             return res.status(400).json({ error: "failed to create" })
         }
+       
         // ==>
         return res.status(201).json({ message: "created successfully" })
+       
     } catch (error) {
-        console.log("erro: ", error)
-        return res.status(500).json({ error: "server error" })
+        console.log("Error:", error); 
+        console.log("Error Code:", error.parent.code); 
+      
+        if (error.parent.code === '22003') {
+          res.status(500).json({ message: 'integer out of range', code: 'range' });
+        } else {
+          return res.status(500).json({ error: 'server error' });
+        }
+      }
+        
+        
     }
-}
+   
 
 // ** desc   delete client
 // ** route  DELETE api/client/delete/:id
@@ -58,7 +69,6 @@ const deleteOneClient = async(req, res) => {
         // ==>
         return res.status(202).json({ message: "deleted successfully" })
     } catch (error) {
-        console.log("erro: ", error)
         return res.status(500).json({ error: "server error" })
     }
 }
@@ -84,23 +94,30 @@ const updateOneClient = async(req, res) => {
             [Op.ne]: id,
         }, } });
         if (checkCode) {
-            return res.status(409).json({ error: "email already used",code:"code" })
+            return res.status(409).json({ error: "code already used",code:"code" })
         }
         
         // update
         const updateClient = await db.client.update({ company_name, code, address, email, activated }, { where: { id } });
         if (!updateClient) {
-            return res.status(400).json({ error: "item does't exist" })
+            return res.status(400).json({ error: "failed to update" })
         }
         // ==>
         return res.status(202).json({ message: "updated successfully" })
     } catch (error) {
-        console.log("erro: ", error)
-        return res.status(500).json({ error: "server error" })
-    }
+        console.log("Error:", error);
+        console.log("Error Code:", error.parent.code);
+      
+        if (error.parent.code === '22003') {
+          res.status(500).json({ message: 'integer out of range', code: 'range' });
+        } else {
+          return res.status(500).json({ error: 'server error' });
+        }
+      }
+        
 }
 
-// ** desc   find one client
+/* // ** desc   find one client
 // ** route  GET api/client/one/:id
 // ** access private
 // ** role   admin
@@ -118,7 +135,7 @@ const retriveOneClient = async(req, res) => {
         console.log("erro: ", error)
         return res.status(500).json({ error: "server error" })
     }
-}
+} */
 
 // ** desc   find one client
 // ** route  GET api/client/all
@@ -128,16 +145,27 @@ const retriveAllClient = async(req, res) => {
     try {
         // retrive
         const items = await db.client.findAll();
-        // count all cliebts
-        const size = await db.client.count()
-        /* if(size===0){
-            return res.status(404).json({ error: "there is no client found"})
-        } */
-        // ==>
-        return res.status(200).json({ items,size })
+       if(!items){
+        return res.status(400).json({error :"failed to retrieve"})
+       }
+        return res.status(200).json({ items })
     } catch (error) {
-        
-        console.log("erro: ", error)
+        return res.status(500).json({ error: "server error" })
+    }
+}
+const retriveAllActive = async(req, res) => {
+    try {
+        // retrive
+        const items = await db.client.findAll(
+            {
+                where:{activated:true}
+            }
+        );
+       if(!items){
+        return res.status(400).json({error :"failed to retrieve"})
+       }
+        return res.status(200).json({ items })
+    } catch (error) {
         return res.status(500).json({ error: "server error" })
     }
 }
@@ -146,6 +174,7 @@ module.exports = {
     createNewClient,
     deleteOneClient,
     updateOneClient,
-    retriveOneClient,
-    retriveAllClient
+   /*  retriveOneClient, */
+    retriveAllClient,
+    retriveAllActive
 }

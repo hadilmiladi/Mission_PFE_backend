@@ -17,13 +17,11 @@ const getconfig=await getAll()
         port: 465,
         secure: true,
         auth: {
-          // TODO: replace `user` and `pass` values from <https://forwardemail.net>
           user: getconfig.from,
           pass: getconfig.password
         }
       });
       //lezmou fi ecran config wahda okhra wl pass yabda cripté
-      /* find where subject : "INVOICE", */
      
       const mailOption = {
           from : getconfig.from,
@@ -127,13 +125,13 @@ const getconfig=await getAll()
                
               </tbody>
               <tfooter>
-                <tr>
-                  <td colspan="2" style="font-size:14px;padding:50px 15px 0 15px;">
-                    <strong style="display:block;margin:0 0 10px 0;">Regards</strong> Bachana Tours<br> Gorubathan, Pin/Zip - 735221, Darjeeling, West bengal, India<br><br>
-                    <b>Phone:</b> 03552-222011<br>
-                    <b>Email:</b> contact@bachanatours.in
-                  </td>
-                </tr>
+              <tr>
+              <td colspan="2" style="font-size:14px;padding:50px 15px 0 15px;">
+                <strong style="display:block;margin:0 0 10px 0;">Regards</strong> Nexus Groupe<br> Lac 2 Tunis<br><br>
+                <b>Phone:</b>70 860 870<br>
+                <b>Email:</b> contact@nexusgroupe.com
+              </td>
+            </tr>
               </tfooter>
             </table>
           </body>
@@ -166,7 +164,7 @@ const sendMailOutlook = async ( globalInvoice, invoices) => {
         service:'outlook',
           
           auth: {
-            // TODO: replace `user` and `pass` values from <https://forwardemail.net>
+            
             user: getconfig.from,
             pass: getconfig.password
           }
@@ -280,9 +278,9 @@ const sendMailOutlook = async ( globalInvoice, invoices) => {
                 <tfooter>
                   <tr>
                     <td colspan="2" style="font-size:14px;padding:50px 15px 0 15px;">
-                      <strong style="display:block;margin:0 0 10px 0;">Regards</strong> Bachana Tours<br> Gorubathan, Pin/Zip - 735221, Darjeeling, West bengal, India<br><br>
-                      <b>Phone:</b> 03552-222011<br>
-                      <b>Email:</b> contact@bachanatours.in
+                      <strong style="display:block;margin:0 0 10px 0;">Regards</strong> Nexus Groupe<br> Lac 2 Tunis<br><br>
+                      <b>Phone:</b>70 860 870<br>
+                      <b>Email:</b> contact@nexusgroupe.com
                     </td>
                   </tr>
                 </tfooter>
@@ -306,12 +304,10 @@ const createAnEmail= async(req,res)=>{
     const length = Object.keys(getconfig).length;
     
     if (length === 0) {
-      const { from, subject, body, configname, typeofmail, password } = req.body;
+      const { from, subject, typeofmail, password } = req.body;
       const createconfig = await db.mailconfig.create({
         from,
         subject,
-        body,
-        configname,
         typeofmail,
         password
       });

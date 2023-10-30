@@ -28,19 +28,12 @@ module.exports = (sequelize, DataTypes) => {
           isEmail: true,
         },
       },
-      password: {
-        type: DataTypes.STRING,
-        allowNull: true,
-        unique: true,
-      },
+      
       activated: {
         type: DataTypes.BOOLEAN,
-        defaultValue: false,
+        defaultValue: true,
       },
-      currentPassport: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
+      
       rankId: {
         type: DataTypes.INTEGER, 
         allowNull: true,
@@ -54,7 +47,6 @@ module.exports = (sequelize, DataTypes) => {
 
   Employee.associate = function (models) {
     Employee.belongsTo(models.rank, { foreignKey: 'rankId' });
-    Employee.hasMany(models.passport);
     Employee.hasMany(models.mission);
   };
 

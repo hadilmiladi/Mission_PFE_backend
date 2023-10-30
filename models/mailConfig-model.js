@@ -10,18 +10,7 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false
              
             },
-            body: {
-                type: DataTypes.TEXT,
-                allowNull: true
-            },
-            configname: {
-                type: DataTypes.STRING,
-                allowNull: true // Update allowNull to true
-            },
-            email:{
-                type: DataTypes.STRING,
-                allowNull: true
-            },
+            
             password:{
                 type: DataTypes.TEXT,
                 allowNull: true

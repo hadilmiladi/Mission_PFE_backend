@@ -10,11 +10,11 @@ const clientRoutes = require("./routes/clientRoutes");
 const login = require("./routes/LoginRouter");
 const mission = require("./routes/missionRoutes");
 const rankRoutes = require("./routes/rank-routes");
-const VisaRoutes = require("./routes/visa-routes");
-const PassportRoutes = require("./routes/passport-routes");
+
+
 const invoiceRoutes = require('./routes/invoiceRoutes');
 const globalinvoiceRoutes =require('./routes/globalinvoiceRoutes')
-const configmail=require('./routes/configmailRoutes')
+const mailing=require('./routes/mailingRoutes')
 
 dotenv.config();
 // app setup
@@ -43,16 +43,13 @@ app.get("/message", (req, res) => {
 });
 app.use("/employee", EmployeeRoutes);
 app.use("/client", clientRoutes);
-//app.use('/Vols', vols)
-//app.use('/Hotels', hotels)
 app.use("/Login", login);
 app.use("/mission", mission);
 app.use("/rank", rankRoutes);
-app.use("/passport", PassportRoutes);
-app.use("/visa", VisaRoutes);
+
 app.use("/invoice",invoiceRoutes)
 app.use("/globalinvoice",globalinvoiceRoutes);
-app.use("/mailconfig",configmail)
+app.use("/mailing",mailing)
 // connect
 port = process.env.PORT || 8080;
 app.listen(port, () => {

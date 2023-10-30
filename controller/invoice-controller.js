@@ -64,16 +64,9 @@ const retrieveInvoice = async (req, res) => {
 // ** role   admin
 const retrieveAllInvoices = async (req, res) => {
   try {
-    /* const {start,end}=req.body;
-    let queries={
-      start:{[Op.gte]:new Date(start)},
-      end:{[Op.lte]:new Date(end)}
-    }
-    console.log("queries: ",queries) */
+    
     const items = await db.invoice.findAll({
-     /*  where: {
-        ...queries
-      }, */
+    
       include: [
         {
           model: db.mission,
@@ -157,21 +150,6 @@ const deleteOneInvoice = async (req, res) => {
     if (!invoice) {
       return res.status(404).json({ error: "Invoice not found" });
     }
-
-    // Find the global invoices with invoiceIds containing the invoice ID
-    const globalInvoices = await db.globalInvoice.findAll({
-      where: {
-        invoiceIds: {
-          [Op.contains]: [id],
-        },
-      },
-    });
-
-    // Delete the global invoices
-    for (const globalInvoice of globalInvoices) {
-      await globalInvoice.destroy();
-    }
-
     // Delete the invoice
     await invoice.destroy();
 

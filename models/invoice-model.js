@@ -2,11 +2,7 @@ module.exports = (sequelize, DataTypes) => {
     const Invoice = sequelize.define(
       "invoice",
       {
-        /*  type:{
-                  type: DataTypes.ENUM('global', 'mini'),
-                  allowNull: true,
-                  default:"mini"
-              }, */
+    
         start: {
           type: DataTypes.DATEONLY,
           allowNull: true,
@@ -32,10 +28,6 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             allowNull: true,
           },
-        /* amount: {
-          type: DataTypes.FLOAT,
-          allowNull: true,
-        }, */
       },
       {
         sequelize,

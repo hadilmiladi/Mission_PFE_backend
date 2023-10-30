@@ -2,10 +2,7 @@ module.exports = (sequelize, DataTypes) => {
   const Mission = sequelize.define(
     "mission",
     {
-      missionId: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
+     
       description: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -26,19 +23,6 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
-      declinedAt: {
-        type: DataTypes.DATEONLY,
-        allowNull: true,
-      },
-      acceptedAt: {
-        type: DataTypes.DATEONLY,
-        allowNull: true,
-      },
-      validatedAt: {
-        type: DataTypes.DATEONLY,
-        allowNull: true,
-      },
-
       start: {
         type: DataTypes.DATEONLY,
         allowNull: false,

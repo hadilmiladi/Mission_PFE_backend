@@ -10,12 +10,12 @@ const db = require("../models");
 const createNewEmployee = async (req, res) => {
   try {
     // attributs
-    const { firstname, lastname, registration, email, rankId, withPassport } =
+    const { firstname, lastname, registration, email, rankId } =
       req.body;
     // check rank exist
     const checkrank = await db.rank.findByPk(rankId);
     if (!checkrank) {
-      return res.status(404).json({ error: "rank doesn't exist" });
+      return res.status(404).json({ error: "rank doesn't exist" , code:"rank" });
     }
     // check email already used
     const checkEmail = await db.employee.findOne({ where: { email } });
@@ -37,11 +37,7 @@ const createNewEmployee = async (req, res) => {
           code: "registration",
         });
     }
-    // passport data
-    let passport = {};
-    if (withPassport) {
-      passport = {};
-    }
+    
     // create
     const newEmployee = await db.employee.create({
       firstname,
@@ -76,31 +72,6 @@ const deleteOneEmployee = async (req, res) => {
     if (!employee) {
       return res.status(404).json({ error: 'Employee not found' });
     }
-
-    // Retrieve all passports associated with the employee
-    const passports = await db.passport.findAll({
-      where: {
-        employeeId: id,
-      },
-    });
-
-    // Delete each passport along with its associated visas
-    for (const passport of passports) {
-      // Find all visas associated with the passport
-      const visas = await db.visa.findAll({
-        where: {
-          passportId: passport.id,
-        },
-      });
-
-      // Delete each visa
-      for (const visa of visas) {
-        await visa.destroy();
-      }
-
-      await passport.destroy();
-    }
-
     // Retrieve all missions associated with the employee
     const missions = await db.mission.findAll({
       where: {
@@ -115,23 +86,6 @@ const deleteOneEmployee = async (req, res) => {
           missionId: mission.id,
         },
       });
-
-      // Delete each invoice and its associated globalinvoices
-      for (const invoice of invoices) {
-        // Retrieve all globalinvoices associated with the invoiceID
-        const globalinvoices = await db.globalInvoice.findAll({
-          where: {
-            invoiceId: invoice.id,
-          },
-        });
-
-        // Delete each globalinvoice
-        for (const globalinvoice of globalinvoices) {
-          await globalinvoice.destroy();
-        }
-
-        await invoice.destroy();
-      }
 
       await mission.destroy();
     }
@@ -163,7 +117,7 @@ const updateOneEmployee = async (req, res) => {
     // check rank exist
     const checkrank = await db.rank.findByPk(rankId);
     if (!checkrank) {
-      return res.status(404).json({ error: "rank doesn't exist" });
+      return res.status(404).json({ error: "rank doesn't exist", code:"rank" });
     }
     // check email
     const checkEmail = await db.employee.findOne({
@@ -175,7 +129,7 @@ const updateOneEmployee = async (req, res) => {
       },
     });
     if (checkEmail) {
-      return res.status(409).json({ error: "email already used" });
+      return res.status(409).json({ error: "email already used" , code :"email"});
     }
     //check registration already used
     const checkRegistration = await db.employee.findOne({
@@ -189,7 +143,7 @@ const updateOneEmployee = async (req, res) => {
     if (checkRegistration) {
       return res
         .status(409)
-        .json({ error: "registration number already used" });
+        .json({ error: "registration number already used" , code:"registration" });
     }
     // update
     const updateEmployee = await db.employee.update(
@@ -197,7 +151,7 @@ const updateOneEmployee = async (req, res) => {
       { where: { id } }
     );
     if (!updateEmployee) {
-      return res.status(400).json({ error: "item does't exist" });
+      return res.status(400).json({ error: "failed to update" });
     }
     // ==>
     return res.status(202).json({ message: "updated successfully" });
@@ -215,7 +169,7 @@ const retriveOneEmployee = async (req, res) => {
   try {
     // attributs
     const id=req.params.id
-    let currentPassport=null
+    
     // retrive
     const item = await db.employee.findByPk(
       id,
@@ -227,13 +181,7 @@ const retriveOneEmployee = async (req, res) => {
           },
         ],
       },
-      {
-        include: [
-          {
-            model: db.passport,
-          },
-        ],
-      },
+      
       {
         include: [
           {
@@ -244,22 +192,16 @@ const retriveOneEmployee = async (req, res) => {
       },
     );
     if (!item) {
-      return res.status(404).json({ error: "item doesnt exist" });
-    }
-    if(item?.currentPassport){
-      currentPassport=await db.passport.findOne({where:{id:item?.currentPassport}})
+      return res.status(404).json({ error: "employee doesn't exist" });
     }
 
     const mission = await db.mission.findAll({
       where: { employeeId:id} 
     });
      
-    const passports = await db.passport.findAll({
-      where: { employeeId: id } /* , order: [['currentPassport', 'DESC']] */,
-    });
-    console.log("current passport: ",currentPassport)
+   
     // ==>
-    return res.status(200).json({ item, passports,currentPassport , mission  });
+    return res.status(200).json({ item, mission  });
   } catch (error) {
     console.log("erro: ", error);
     return res.status(500).json({ error: "server error" });
@@ -291,9 +233,8 @@ const retriveStatus = async (req, res) => {
 // ** role   admin
 const retriveOneEmployeeProfil = async (req, res) => {
   try {
-    // attributs
-    //const id=req.employee.id
-    let currentPassport=null
+    
+   
     // retrive
     const item = await db.employee.findOne(
       
@@ -302,13 +243,6 @@ const retriveOneEmployeeProfil = async (req, res) => {
           {
             model: db.rank,
             attributes: ["name", "permission", "perdiem"],
-          },
-        ],
-      },
-      {
-        include: [
-          {
-            model: db.passport,
           },
         ],
       },
@@ -324,19 +258,15 @@ const retriveOneEmployeeProfil = async (req, res) => {
     if (!item) {
       return res.status(404).json({ error: "item doesnt exist" });
     }
-    if(item?.currentPassport){
-      currentPassport=await db.passport.findOne({where:{id:item?.currentPassport}})
-    }
+   
     console.log("employee: ",req.employee)
     const mission = await db.mission.findAll({
       where: { employeeId:req.employee.id } 
     });
      
-    const passports = await db.passport.findAll({
-      where: { employeeId: req.employee.id  } /* , order: [['currentPassport', 'DESC']] */,
-    });
+    
     // ==>
-    return res.status(200).json({ item, passports,currentPassport , mission  });
+    return res.status(200).json({ item,  mission  });
   } catch (error) {
     console.log("erro: ", error);
     return res.status(500).json({ error: "server error" });
@@ -355,8 +285,6 @@ const retriveOneEmployeeProfil = async (req, res) => {
 // ** role   admin
 const retriveAllEmployee = async (req, res) => {
   try {
-
-    // Retrieve all employees except your own data
     const items = await db.employee.findAll({
       include: [
         {
@@ -369,6 +297,23 @@ const retriveAllEmployee = async (req, res) => {
         },
       ],
     });
+    if(!items){
+      return res.status(404).json({error: "failed to retrieve"})
+    }
+    return res.status(200).json({ items });
+  } catch (error) {
+    console.log("error: ", error);
+    return res.status(500).json({ error: "server error" });
+  }
+};
+const retriveAll = async (req, res) => {
+  try {
+    const items = await db.employee.findAll({
+      include: [{model:db.rank}]
+    });
+    if(!items){
+      return res.status(404).json({error: "failed to retrieve"})
+    }
     return res.status(200).json({ items });
   } catch (error) {
     console.log("error: ", error);
@@ -392,7 +337,21 @@ const retriveEmployeeName = async (req, res) => {
   }
 };
 
-
+const deleteall = async (req, res) => {
+    try {
+      // Attributes
+      const { id } = req.params;
+      const employee = await db.employee.findByPk(id);
+      if (!employee) {
+        return res.status(404).json({ error: 'Employee not found' });
+      }
+      await employee.destroy();
+       return res.status(200).json({ message: 'Employee and associated data deleted successfully' });
+    } catch (error) {
+      console.log('error: ', error);
+      return res.status(500).json({ error: 'Server error' });
+    }
+  };
 module.exports = {
   createNewEmployee,
   deleteOneEmployee,
@@ -401,7 +360,9 @@ module.exports = {
   retriveAllEmployee,
   retriveOneEmployeeProfil,
   retriveStatus,
-  retriveEmployeeName
+  retriveEmployeeName,
+  retriveAll,
+  deleteall
   
  
 };

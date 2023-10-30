@@ -5,7 +5,8 @@ module.exports = (sequelize, DataTypes) => {
         "rank", {
             name: {
                 type: DataTypes.STRING,
-                allowNull: false
+                allowNull: false,
+                
             },
             permission: {
                 type: DataTypes.ENUM('admin', 'user', 'ceo','chef du projet'),
@@ -14,38 +15,31 @@ module.exports = (sequelize, DataTypes) => {
                         ['admin', 'user', 'ceo','chef du projet']
                     ]
                 },
-                allowNull: false
+                allowNull: false,
+               
             },
             perdiem: {
                 type: DataTypes.FLOAT,
-                allowNull: false
+                allowNull: false,
+                
             },
-            createdAt: {
-                type: DataTypes.DATE,
-                allowNull: true // Update allowNull to true
-            },
-            updatedAt: {
-                type: DataTypes.DATE,
-                allowNull: true // Update allowNull to true
-            }
-
+            
             
         }, {
             sequelize,
+      
             modelName: "rank",
 
         }
     );
 
-    //Rank.associate = function(models) {
-        /* Rank.hasMany(models.employee, { foreignKey: 'rankId' }); */
-      //  Rank.belongsTo(models.employee, { foreignKey: 'rankId' });
-        
-   // };
+   
 
    Rank.associate = function (models) {
     Rank.hasMany(models.employee, { foreignKey: 'rankId' });
   };
+
+ 
 
     Rank.sync()
         .then(() => console.log("Rank table created"))

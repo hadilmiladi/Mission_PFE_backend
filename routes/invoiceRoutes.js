@@ -10,8 +10,8 @@ deleteOneInvoice
   
   } = require("../controller/invoice-controller");
   const verifyAccess = require("../middleware/verify-access")
-  router.get("/one/:id",/* verifyAccess, */ retrieveInvoice);
-  router.get("/all",/* , verifyAccess, */retrieveAllInvoices);
+  router.get("/one/:id",verifyAccess, retrieveInvoice);
+  router.get("/all", verifyAccess,retrieveAllInvoices);
   router.get("/mini", verifyAccess,retrieveInvoices);
   router.delete("/delete/:id",deleteOneInvoice);
   //router.post("/create",verifyAccess,createGlobalInvoice)

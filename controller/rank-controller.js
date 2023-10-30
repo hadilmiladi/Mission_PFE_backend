@@ -9,10 +9,6 @@ const createNewRank = async(req, res) => {
     try {
         // attributs
         const { name, permission, perdiem } = req.body;
-        // control on permission enum
-        if (permission !== "admin" && permission !== "user" && permission !== "ceo" && permission !== "chef du projet") {
-            return res.status(406).json({ code: "permission" })
-        }
          //check name already used
          const checkName = await db.rank.findOne({ where: { name:String(name) } });
          if (checkName) {
@@ -24,13 +20,14 @@ const createNewRank = async(req, res) => {
             permission,
             perdiem
         });
+        //failed to create for some reason
         if (!newRank) {
             return res.status(400).json({ error: "failed to create" })
         }
         // ==>
         return res.status(201).json({ message: "created successfully" })
     } catch (error) {
-        console.log("erro: ", error)
+        //server error 
         return res.status(500).json({ error: "server error" })
     }
 }
@@ -44,8 +41,12 @@ const deleteOneRank = async(req, res) => {
         // attributs
         const { id } = req.params;
         // check rank is being uqed by an other employee
-        const checkRank = await db.employee.findByPk(id);
-        if (checkRank) {
+        const checkRank = await db.employee.findAll({
+            where:{
+                rankId:id
+            }});
+        console.log('check',checkRank.length)
+        if (checkRank.length!==0) {
             return res.status(409).json({ error: "already used" })
         }
         // create
@@ -71,12 +72,15 @@ const updateOneRank = async(req, res) => {
     try {
         // attributs
         const { id } = req.params;
-        // attributs
         const { name, permission, perdiem } = req.body;
+        const checkName = await db.rank.findOne({ where: { name:String(name) } });
+        if (checkName) {
+            return res.status(409).json({ code: "name" })
+        }
         // update
         const updateRank = await db.rank.update({ name, permission, perdiem }, { where: { id } });
         if (!updateRank) {
-            return res.status(400).json({ error: "item does't exist" })
+            return res.status(400).json({ error: "failed to update" })
         }
         // ==>
         return res.status(202).json({ message: "updated successfully" })
@@ -86,7 +90,7 @@ const updateOneRank = async(req, res) => {
     }
 }
 
-// ** desc   find one rank
+/* // ** desc   find one rank
 // ** route  GET api/rank/one/:id
 // ** access private
 // ** role   admin
@@ -105,7 +109,7 @@ const retriveOneRank = async(req, res) => {
         console.log("erro: ", error)
         return res.status(500).json({ error: "server error" })
     }
-}
+} */
 
 // ** desc   find one rank
 // ** route  GET api/rank/all
@@ -115,10 +119,11 @@ const retriveAllRank = async(req, res) => {
     try {
         // retrive
         const items = await db.rank.findAll();
-        // ==>
+        if(!items){
+            return res.status(400).json({ error : "failed to retrieve"})
+        }
         return res.status(200).json({ items })
     } catch (error) {
-        console.log("erro: ", error)
         return res.status(500).json({ error: "server error" })
     }
 }
@@ -127,6 +132,7 @@ module.exports = {
     createNewRank,
     deleteOneRank,
     updateOneRank,
-    retriveOneRank,
-    retriveAllRank
+  /*   retriveOneRank, */
+    retriveAllRank,
+    
 }
